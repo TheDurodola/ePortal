@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: eportal
+  mongodb:
+    host: ${MONGODB_HOST:localhost}
+    port: ${MONGODB_PORT:27017}
+    database: ${MONGODB_DATABASE:medcheck}
+    username: ${MONGODB_USERNAME}
+    password: ${MONGODB_PASSWORD}
+    authentication-database: admin
+
+jwt:
+  signing:
+    key: ${JWT_SIGNING_KEY}
+  duration: ${JWT_DURATION}

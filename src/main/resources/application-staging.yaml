@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: eportal
+  mongodb:
+    uri: ${MONGODB_URI}
+
+management:
+  health:
+    mongodb:
+      enabled: false
+
+jwt:
+  duration: ${JWT_DURATION}
+  signing:
+    key: ${JWT_SIGNING_KEY}
