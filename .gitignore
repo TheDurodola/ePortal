@@ -33,3 +33,4 @@ build/
 .vscode/
 .mvn
 .env
+application-local.yaml
