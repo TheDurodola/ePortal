@@ -26,8 +26,8 @@ public class SecurityFilterChainConfiguration {
                 .addFilterAt(customAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(customAuthorizationFilter, CustomAuthenticationFilter.class)
                 .authorizeHttpRequests((c) -> c
-                        .requestMatchers(HttpMethod.GET, "/test/*").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/registration/bulk").hasAnyAuthority("ADMIN", "PRINCIPAL")
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/auth/password").permitAll()
                         .anyRequest().authenticated())
                 .build();
 

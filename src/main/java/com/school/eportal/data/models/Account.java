@@ -23,11 +23,6 @@ import java.util.UUID;
 @Builder
 @AllArgsConstructor
 public class Account {
-
-    public Account() {
-        id = UUID.randomUUID().toString();
-    }
-
     @Id
     private String id;
 

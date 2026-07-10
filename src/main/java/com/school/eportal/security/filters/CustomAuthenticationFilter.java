@@ -70,8 +70,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
                     .withExpiresAt(Date.from(Instant.now().plusSeconds(jwtValidationLength)))
                     .sign(Algorithm.HMAC256(signingKey.getBytes()));
 
-
-            SignInResponse signInResponse = new SignInResponse(jwt, result.getAuthorities().iterator().next().getAuthority());
+            SignInResponse signInResponse = new SignInResponse(jwt);
 
             response.setContentType("application/json");
             response.setStatus(HttpServletResponse.SC_OK);

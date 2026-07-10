@@ -48,7 +48,7 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
             throws ServletException, IOException {
-        log.info("Authorization Filter Reached");
+        log.info("Authorization Initiated with IP Address: {}", request.getRemoteAddr());
         try {
             if (isPublicApi(request)) {
                 log.info("Request Path: {}", request.getServletPath());
@@ -109,8 +109,7 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
     }
 
     private static boolean isPublicApi(HttpServletRequest request) {
-        return request.getServletPath().equals("/api/v1/auth/signin")
-                || request.getServletPath().equals("/api/auth/signup")
-                || request.getServletPath().equals("/test/live");
+        return request.getServletPath().equals("/api/v1/auth/password");
+//                || request.getServletPath().equals("/api/v1/auth/registration/bulk");
     }
 }

@@ -91,6 +91,7 @@ public class AccountServiceImpl implements AccountService {
                         .username(bulkAccountDto.getUsername())
                         .lastName(bulkAccountDto.getLastName())
                         .status(AccountStatus.INACTIVE)
+                        .birthDate(bulkAccountDto.getBirthDate())
                         .role(bulkAccountDto.getRole())
                         .build())
                 .toList();
