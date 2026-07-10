@@ -1,8 +1,9 @@
 package com.school.eportal.controllers;
 
-import com.school.eportal.dtos.requests.RegisterUserRequest;
-import com.school.eportal.dtos.requests.SignUpRequest;
+import com.school.eportal.dtos.requests.RegisterBulkUsersRequest;
+import com.school.eportal.dtos.responses.RegisterBulkUsersResponse;
 import com.school.eportal.services.interfaces.AccountService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -21,11 +22,11 @@ public class AuthController {
     private final AccountService accountService;
 
     @PostMapping(value = "/signup")
-    public ResponseEntity<?> createUser( @RequestBody SignUpRequest request) {
+    public ResponseEntity<?> createUser( @Valid @RequestBody RegisterBulkUsersRequest request) {
         log.info("Sign Up Endpoint hit");
         Map<String, Object> response = new HashMap<>();
-        response.put("message", "User account created successfully");
-        response.put("data", accountService.signUp(request));
+        RegisterBulkUsersResponse data = accountService.bulkRegistration(request);
+        response.put("data", data);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
