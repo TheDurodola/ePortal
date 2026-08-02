@@ -3,7 +3,7 @@ package com.school.eportal.controllers;
 import com.school.eportal.dtos.requests.AddPasswordRequest;
 import com.school.eportal.dtos.requests.RegisterBulkUsersRequest;
 import com.school.eportal.dtos.responses.RegisterBulkUsersResponse;
-import com.school.eportal.dtos.responses.addPasswordResponse;
+import com.school.eportal.dtos.responses.AddPasswordResponse;
 import com.school.eportal.services.interfaces.AccountService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -35,7 +35,7 @@ public class AuthController {
     @PatchMapping(value = "/password")
     public ResponseEntity<?> addPassword( @Valid @RequestBody AddPasswordRequest request) {
         Map<String, Object> response = new HashMap<>();
-        addPasswordResponse data = accountService.addPassword(request);
+        AddPasswordResponse data = accountService.addPassword(request);
         response.put("data", data);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }

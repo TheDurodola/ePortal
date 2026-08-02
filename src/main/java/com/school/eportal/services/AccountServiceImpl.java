@@ -2,13 +2,12 @@ package com.school.eportal.services;
 
 import com.school.eportal.data.models.Account;
 import com.school.eportal.data.models.enums.AccountStatus;
-import com.school.eportal.data.models.enums.Role;
 import com.school.eportal.data.repositories.Accounts;
 import com.school.eportal.dtos.BulkAccountDto;
 import com.school.eportal.dtos.requests.AddPasswordRequest;
 import com.school.eportal.dtos.requests.RegisterBulkUsersRequest;
 import com.school.eportal.dtos.responses.RegisterBulkUsersResponse;
-import com.school.eportal.dtos.responses.addPasswordResponse;
+import com.school.eportal.dtos.responses.AddPasswordResponse;
 import com.school.eportal.exceptions.AccountNotFoundException;
 import com.school.eportal.exceptions.InvalidBirthDateException;
 import com.school.eportal.exceptions.InvalidBulkRegistration;
@@ -17,6 +16,7 @@ import com.school.eportal.security.dtos.responses.AccountResponse;
 import com.school.eportal.services.interfaces.AccountService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -58,14 +58,9 @@ public class AccountServiceImpl implements AccountService {
                 .build();
     }
 
-
     @Override
     @Transactional
-    public RegisterBulkUsersResponse bulkRegistration(RegisterBulkUsersRequest request) {
-        Map<String, Map<String, List<String>>> data = new HashMap<>();
-        Map<String, List<String>> passed = new HashMap<>();
-        Map<String, List<String>> failed = new HashMap<>();
-
+    public RegisterBulkUsersResponse bulkRegistration(@NonNull RegisterBulkUsersRequest request) {
         List<String> failCount = new ArrayList<>();
         List<String> listOfRejectedUsernames = new ArrayList<>();
         List<String> passCount = new ArrayList<>();
@@ -100,26 +95,19 @@ public class AccountServiceImpl implements AccountService {
             throw new InvalidBulkRegistration("All usernames are already taken.");
         }
         List<Account> accounts1 = accounts.saveAll(list);
+
         passCount.add(String.valueOf(accounts1.size()));
 
-        failed.put("count", failCount);
-        failed.put("usernames", listOfRejectedUsernames);
-        passed.put("count", passCount);
 
-
-
-        data.put("passed", passed);
-        data.put("failed", failed);
 
         return RegisterBulkUsersResponse.builder()
-                .data(data)
+                .data(prepareResponse(failCount, listOfRejectedUsernames, passCount))
                 .build();
 
     }
 
     @Override
-    public addPasswordResponse addPassword(AddPasswordRequest request) {
-
+    public AddPasswordResponse addPassword(@NonNull AddPasswordRequest request) {
         Account savedAccount = accounts.findByUsername(request.getUsername().toLowerCase())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
@@ -132,8 +120,21 @@ public class AccountServiceImpl implements AccountService {
 
         accounts.save(savedAccount);
 
-        return null;
+        return AddPasswordResponse.builder().build();
     }
 
+
+    private static @NonNull Map<String, Map<String, List<String>>> prepareResponse(List<String> failCount, List<String> listOfRejectedUsernames, List<String> passCount) {
+        Map<String, Map<String, List<String>>> data = new HashMap<>();
+        Map<String, List<String>> passed = new HashMap<>();
+        Map<String, List<String>> failed = new HashMap<>();
+        failed.put("count", failCount);
+        failed.put("usernames", listOfRejectedUsernames);
+        passed.put("count", passCount);
+
+        data.put("passed", passed);
+        data.put("failed", failed);
+        return data;
+    }
 
 }
