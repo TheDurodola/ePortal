@@ -1,21 +1,31 @@
 package com.school.eportal.services;
 
 import com.school.eportal.data.models.Account;
+import com.school.eportal.data.models.Classroom;
+import com.school.eportal.data.models.DepartmentPath;
+import com.school.eportal.data.models.ParentChild;
 import com.school.eportal.data.models.enums.AccountStatus;
+import com.school.eportal.data.models.enums.Department;
+import com.school.eportal.data.models.enums.Grade;
+import com.school.eportal.data.models.enums.Role;
 import com.school.eportal.data.repositories.Accounts;
+import com.school.eportal.data.repositories.Classrooms;
+import com.school.eportal.data.repositories.DepartmentPathRepo;
+import com.school.eportal.data.repositories.ParentChildRepo;
 import com.school.eportal.dtos.BulkAccountDTO;
-import com.school.eportal.dtos.requests.AddPasswordRequest;
+import com.school.eportal.dtos.StudentExcelDTO;
+import com.school.eportal.dtos.TeacherExcelDTO;
+import com.school.eportal.dtos.requests.AccountActivationRequest;
 import com.school.eportal.dtos.requests.ParentRegistrationRequest;
 import com.school.eportal.dtos.requests.RegisterBulkUsersRequest;
+import com.school.eportal.dtos.responses.AccountActivationResponse;
 import com.school.eportal.dtos.responses.ParentRegistrationResponse;
+import com.school.eportal.dtos.responses.PreRegistrationResponse;
 import com.school.eportal.dtos.responses.RegisterBulkUsersResponse;
-import com.school.eportal.dtos.responses.AddPasswordResponse;
-import com.school.eportal.exceptions.AccountNotFoundException;
-import com.school.eportal.exceptions.InvalidBirthDateException;
-import com.school.eportal.exceptions.InvalidBulkRegistration;
-import com.school.eportal.exceptions.UserNotFoundException;
+import com.school.eportal.exceptions.*;
 import com.school.eportal.security.dtos.responses.AccountResponse;
 import com.school.eportal.services.interfaces.AccountService;
+import com.school.eportal.utils.ExcelParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -24,14 +34,25 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.*;
+
+import static com.school.eportal.utils.Mutator.mutate;
+import static com.school.eportal.utils.NameFormatter.toProperCase;
+import static com.school.eportal.utils.RandomPicker.generateSixRandomNumber;
+import static com.school.eportal.utils.Validator.validateExcelFile;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class AccountServiceImpl implements AccountService {
+
     private final Accounts accounts;
+    private final ParentChildRepo parentChildRepo;
+    private final DepartmentPathRepo departmentPathRepo;
+    private final Classrooms classrooms;
     private final PasswordEncoder passwordEncoder;
+    private final ExcelParser parser;
 
     @Override
     public AccountResponse getUserAccountBy(String username) throws AccountNotFoundException {
@@ -89,7 +110,7 @@ public class AccountServiceImpl implements AccountService {
                         .username(bulkAccountDTO.getUsername())
                         .lastName(bulkAccountDTO.getLastName())
                         .status(AccountStatus.INACTIVE)
-                        .birthDate(bulkAccountDTO.getBirthDate())
+                        .dateOfBirth(bulkAccountDTO.getDateOfBirth())
                         .role(bulkAccountDTO.getRole())
                         .build())
                 .toList();
@@ -109,23 +130,114 @@ public class AccountServiceImpl implements AccountService {
 
     }
 
-    public RegisterBulkUsersResponse bulkPreRegistration(@NonNull MultipartFile request) {
+    @Override
+    public PreRegistrationResponse preRegistration(@NonNull MultipartFile file) {
+        try {
+            validateExcelFile(file);
+        } catch (IOException e) {
+            throw new ValidatorException(e);
+        }
+        if (!Objects.equals(file.getOriginalFilename(), "PreRegistration")) {
+            throw new InvalidPreRegistrationException("Incorrect file name");
+        }
+        try {
+            processStudents(file);
+            processTeachers(file);
+        } catch (IOException e) {
+            throw new ExcelParserException(e);
+        }
 
-
-        return RegisterBulkUsersResponse.builder().build();
+        return PreRegistrationResponse.builder().build();
     }
 
-    public ParentRegistrationResponse parentRegistration(ParentRegistrationRequest request){
-        return null;
+    private void processTeachers(@NonNull MultipartFile file) throws IOException {
+        List<TeacherExcelDTO> teachers = parser.parseTeacherExcelFile(file);
+        teachers.forEach(teacher -> {
+            Account account = teacher.getAccount();
+            account.setRole(Role.TEACHER);
+            account.setStatus(AccountStatus.INACTIVE);
+            account.setUsername("tr" + generateSixRandomNumber());
+            accounts.save(account);
+            if (!teacher.getGrade().equals(Grade.NONE)) {
+                Classroom classroom = classrooms.findByGradeAndDivision(teacher.getGrade(), teacher.getDivision())
+                        .orElseThrow(() -> new InvalidClassroomException("Invalid Grade/Division for "
+                                + account.getFirstName() + " " + account.getLastName()));
+                classroom.setClassTeacher(account);
+
+                classrooms.save(classroom);
+            }
+        });
+    }
+
+    private void processStudents(@NonNull MultipartFile file) throws IOException {
+        List<StudentExcelDTO> students = parser.parseStudentExcelFile(file);
+        students.forEach(student -> {
+            Account account = student.getAccount();
+            account.setStatus(AccountStatus.INACTIVE);
+            account.setRole(Role.STUDENT);
+            account.setUsername("st" + generateSixRandomNumber());
+            Account savedStudent = accounts.save(account);
+            Classroom classroom = classrooms.findByGradeAndDivision(student.getGrade()
+                            , student.getDivision())
+                    .orElseThrow(() -> new InvalidClassroomException("Invalid Grade/Division for "
+                            + account.getFirstName() + " " + account.getLastName()));
+            classroom.getStudents().add(savedStudent);
+            classrooms.save(classroom);
+            if (!student.getDepartment().equals(Department.NONE)) {
+                DepartmentPath departmentPath = departmentPathRepo.findFirstByDepartment(student.getDepartment())
+                        .orElseThrow(() -> new DepartmentPathException("Critical: Department Path not found"));
+
+                departmentPath.addStudent(savedStudent);
+                departmentPathRepo.save(departmentPath);
+            }
+        });
     }
 
     @Override
-    public AddPasswordResponse addPassword(@NonNull AddPasswordRequest request) {
+    public ParentRegistrationResponse parentRegistration(ParentRegistrationRequest request){
+        mutate(request);
+        if (accounts.existsByUsername(request.getUsername())){
+            throw new InvalidUsernameException("Email already taken");
+        }
+
+        Account childAccount = accounts.findByUsername(request.getChildSchoolId())
+                .orElseThrow(() -> new InvalidUsernameException("Invalid Child School ID"));
+
+        if (!childAccount.getDateOfBirth().equals(request.getChildDateOfBirth())) {
+            throw new InvalidDateOfBirthException("Incorrect Child DatePfBirth");
+        }
+
+        Account newParentAccount = Account.builder()
+                .firstName(request.getFirstName())
+                .role(Role.PARENT)
+                .username(request.getUsername())
+                .password(passwordEncoder.encode(request.getPassword()))
+                .dateOfBirth(request.getDateOfBirth())
+                .lastName(request.getLastName())
+                .build();
+
+        Account savedParentAccount = accounts.save(newParentAccount);
+
+        ParentChild relationship = ParentChild.builder()
+                .parent(savedParentAccount)
+                .child(childAccount)
+                .build();
+        parentChildRepo.save(relationship);
+
+
+            return ParentRegistrationResponse.builder()
+                    .parentFirstName(toProperCase(newParentAccount.getFirstName()))
+                    .childFirstName(toProperCase(childAccount.getFirstName()))
+                    .build();
+    }
+
+    @Override
+    public AccountActivationResponse accountActivation(@NonNull AccountActivationRequest request) {
         Account savedAccount = accounts.findByUsername(request.getUsername().toLowerCase())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
-        if (!savedAccount.getBirthDate().equals(request.getDateOfBirth())){
-            throw new InvalidBirthDateException("Invalid Birthdate");
+        if (!savedAccount.getDateOfBirth().equals(request.getDateOfBirth())){
+            throw new InvalidDateOfBirthException("Invalid Date of Birth");
         }
 
         savedAccount.setPassword(passwordEncoder.encode(request.getPassword()));
@@ -133,7 +245,9 @@ public class AccountServiceImpl implements AccountService {
 
         accounts.save(savedAccount);
 
-        return AddPasswordResponse.builder().build();
+        return AccountActivationResponse.builder()
+                .firstName(toProperCase(savedAccount.getFirstName()))
+                .build();
     }
 
 

@@ -7,5 +7,6 @@ import lombok.Setter;
 @Setter
 @Getter
 @Builder
-public class AddPasswordResponse {
+public class AccountActivationResponse {
+    public String firstName;
 }

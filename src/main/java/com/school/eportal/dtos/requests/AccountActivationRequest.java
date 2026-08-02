@@ -11,12 +11,12 @@ import java.time.LocalDate;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class AddPasswordRequest {
+public class AccountActivationRequest {
 
     @NotBlank(message = "AdNo/Username cannot be blank")
     private String username;
 
-    @Past(message = "User birthdate can only be in the past")
+    @Past(message = "User date of birth can only be in the past")
     private LocalDate dateOfBirth;
 
     @NotBlank(message = "Password cannot be blank")

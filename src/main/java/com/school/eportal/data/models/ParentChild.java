@@ -1,34 +1,25 @@
 package com.school.eportal.data.models;
 
-import com.school.eportal.data.models.enums.Department;
-import com.school.eportal.data.models.enums.Division;
-import com.school.eportal.data.models.enums.Grade;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
-import java.util.List;
 
-@Setter
 @Getter
+@Setter
+@Builder
 @Document
-public class Classroom {
-
+public class ParentChild {
+    @Id
     private String id;
 
-    private Account classTeacher;
-
-    private List<Account> students;
-
-
-
-    private Grade grade;
-
-    private Division division;
-
+    private Account parent;
+    private Account child;
     @CreatedDate
     private Instant createdAt;
 

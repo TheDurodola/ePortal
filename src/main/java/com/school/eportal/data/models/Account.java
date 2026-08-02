@@ -38,7 +38,7 @@ public class Account {
 
     private Role role;
 
-    private LocalDate birthDate;
+    private LocalDate dateOfBirth;
 
     private AccountStatus status;
 

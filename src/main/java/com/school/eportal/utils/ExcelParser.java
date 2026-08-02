@@ -7,7 +7,9 @@ import com.school.eportal.data.models.enums.Grade;
 import com.school.eportal.dtos.StudentExcelDTO;
 import com.school.eportal.exceptions.InvalidDateOfBirthException;
 import com.school.eportal.dtos.TeacherExcelDTO;
+import lombok.RequiredArgsConstructor;
 import org.apache.poi.ss.usermodel.*;
+import org.apache.tika.Tika;
 import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
@@ -23,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 
 @Component
+
 public class ExcelParser {
 
     public List<TeacherExcelDTO> parseTeacherExcelFile(MultipartFile file) throws IOException {
@@ -48,14 +51,25 @@ public class ExcelParser {
                 String grade = getStringCellValue(currentRow.getCell(4));
                 String division = getStringCellValue(currentRow.getCell(5));
 
+
+                Grade gradeValue;
+                Division divisionValue;
+                try {
+                    gradeValue = Grade.valueOf(grade.toUpperCase());
+                    divisionValue = Division.valueOf(division.toUpperCase());
+                }catch (IllegalArgumentException e){
+                    gradeValue = Grade.NONE;
+                    divisionValue = Division.NONE;
+                }
+
                 records.add(TeacherExcelDTO.builder()
                                 .account(Account.builder()
                                         .firstName(firstName)
                                         .lastName(lastName)
-                                        .birthDate(dateOfBirth)
+                                        .dateOfBirth(dateOfBirth)
                                         .build())
-                                .grade(Grade.valueOf(grade))
-                                .division(Division.valueOf(division))
+                                .grade(gradeValue)
+                                .division(divisionValue)
                         .build());
             }
         }
@@ -87,15 +101,21 @@ public class ExcelParser {
                 String division = getStringCellValue(currentRow.getCell(5));
                 String department = getStringCellValue(currentRow.getCell(6));
 
+                Department value;
+                try {
+                    value = Department.valueOf(department);
+                }catch (IllegalArgumentException e){
+                    value = Department.NONE;
+                }
                 records.add(StudentExcelDTO.builder()
                                 .account(Account.builder()
                                         .firstName(firstName)
                                         .lastName(lastName)
-                                        .birthDate(dateOfBirth)
+                                        .dateOfBirth(dateOfBirth)
                                         .build())
                                 .grade(Grade.valueOf(grade))
                                 .division(Division.valueOf(division))
-                                .department(Department.valueOf(department))
+                                .department(value)
                         .build());
             }
         }

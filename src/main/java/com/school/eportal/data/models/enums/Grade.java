@@ -1,6 +1,7 @@
 package com.school.eportal.data.models.enums;
 
 public enum Grade {
+    NONE,
     CRECHE,
     PLAYGROUND,
     KG1,

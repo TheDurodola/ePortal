@@ -1,9 +1,9 @@
 package com.school.eportal.controllers;
 
-import com.school.eportal.dtos.requests.AddPasswordRequest;
+import com.school.eportal.dtos.requests.AccountActivationRequest;
 import com.school.eportal.dtos.requests.RegisterBulkUsersRequest;
 import com.school.eportal.dtos.responses.RegisterBulkUsersResponse;
-import com.school.eportal.dtos.responses.AddPasswordResponse;
+import com.school.eportal.dtos.responses.AccountActivationResponse;
 import com.school.eportal.services.interfaces.AccountService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,10 +32,10 @@ public class AuthController {
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 
-    @PatchMapping(value = "/password")
-    public ResponseEntity<?> addPassword( @Valid @RequestBody AddPasswordRequest request) {
+    @PatchMapping(value = "/account/activation")
+    public ResponseEntity<?> accountActivation(@Valid @RequestBody AccountActivationRequest request) {
         Map<String, Object> response = new HashMap<>();
-        AddPasswordResponse data = accountService.addPassword(request);
+        AccountActivationResponse data = accountService.accountActivation(request);
         response.put("data", data);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }

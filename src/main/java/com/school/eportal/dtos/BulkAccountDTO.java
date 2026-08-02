@@ -29,7 +29,7 @@ public class BulkAccountDTO {
     @NotNull(message = "User role is required")
     private Role role;
 
-    @NotNull(message = "User birthdate is required")
-    @Past(message = "Birthdate must be in the past")
-    private LocalDate birthDate;
+    @NotNull(message = "User Date of Birth is required")
+    @Past(message = "Date of Birth must be in the past")
+    private LocalDate dateOfBirth;
 }
