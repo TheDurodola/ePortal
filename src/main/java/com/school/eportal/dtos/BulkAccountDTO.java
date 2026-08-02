@@ -12,7 +12,7 @@ import java.time.LocalDate;
 
 @Setter
 @Getter
-public class BulkAccountDto {
+public class BulkAccountDTO {
 
     @NotBlank(message = "Username cannot be blank")
     @Size(min = 3, max = 30, message = "Username must be between 3 and 30 characters")

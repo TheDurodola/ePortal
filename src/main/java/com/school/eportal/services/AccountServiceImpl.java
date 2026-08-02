@@ -3,9 +3,11 @@ package com.school.eportal.services;
 import com.school.eportal.data.models.Account;
 import com.school.eportal.data.models.enums.AccountStatus;
 import com.school.eportal.data.repositories.Accounts;
-import com.school.eportal.dtos.BulkAccountDto;
+import com.school.eportal.dtos.BulkAccountDTO;
 import com.school.eportal.dtos.requests.AddPasswordRequest;
+import com.school.eportal.dtos.requests.ParentRegistrationRequest;
 import com.school.eportal.dtos.requests.RegisterBulkUsersRequest;
+import com.school.eportal.dtos.responses.ParentRegistrationResponse;
 import com.school.eportal.dtos.responses.RegisterBulkUsersResponse;
 import com.school.eportal.dtos.responses.AddPasswordResponse;
 import com.school.eportal.exceptions.AccountNotFoundException;
@@ -20,6 +22,7 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.*;
 
@@ -66,7 +69,7 @@ public class AccountServiceImpl implements AccountService {
         List<String> passCount = new ArrayList<>();
 
         List<String> usernames = request.getData().stream()
-                .map(BulkAccountDto::getUsername)
+                .map(BulkAccountDTO::getUsername)
                 .toList();
 
         List<Account> existingUsers = accounts.findAllByUsernameIn(usernames);
@@ -81,13 +84,13 @@ public class AccountServiceImpl implements AccountService {
         List<String> finalListOfRejectedUsernames = listOfRejectedUsernames;
         List<Account> list = request.getData().stream()
                 .filter(account -> !finalListOfRejectedUsernames.contains(account.getUsername()))
-                .map(bulkAccountDto -> Account.builder()
-                        .firstName(bulkAccountDto.getFirstName())
-                        .username(bulkAccountDto.getUsername())
-                        .lastName(bulkAccountDto.getLastName())
+                .map(bulkAccountDTO -> Account.builder()
+                        .firstName(bulkAccountDTO.getFirstName())
+                        .username(bulkAccountDTO.getUsername())
+                        .lastName(bulkAccountDTO.getLastName())
                         .status(AccountStatus.INACTIVE)
-                        .birthDate(bulkAccountDto.getBirthDate())
-                        .role(bulkAccountDto.getRole())
+                        .birthDate(bulkAccountDTO.getBirthDate())
+                        .role(bulkAccountDTO.getRole())
                         .build())
                 .toList();
 
@@ -104,6 +107,16 @@ public class AccountServiceImpl implements AccountService {
                 .data(prepareResponse(failCount, listOfRejectedUsernames, passCount))
                 .build();
 
+    }
+
+    public RegisterBulkUsersResponse bulkPreRegistration(@NonNull MultipartFile request) {
+
+
+        return RegisterBulkUsersResponse.builder().build();
+    }
+
+    public ParentRegistrationResponse parentRegistration(ParentRegistrationRequest request){
+        return null;
     }
 
     @Override
