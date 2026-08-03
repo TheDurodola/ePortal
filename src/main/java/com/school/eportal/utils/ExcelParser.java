@@ -5,13 +5,11 @@ import com.school.eportal.data.models.enums.Department;
 import com.school.eportal.data.models.enums.Division;
 import com.school.eportal.data.models.enums.Grade;
 import com.school.eportal.dtos.StudentExcelDTO;
+import com.school.eportal.dtos.TeacherExcelDTO;
 import com.school.eportal.exceptions.EmptyCellException;
 import com.school.eportal.exceptions.InvalidDateOfBirthException;
-import com.school.eportal.dtos.TeacherExcelDTO;
-import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
-import org.apache.tika.Tika;
-import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -22,14 +20,15 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 
+@Slf4j
 @Component
 
 public class ExcelParser {
 
     public List<TeacherExcelDTO> parseTeacherExcelFile(MultipartFile file) throws IOException {
+        log.info("Parsing Teacher Sheet");
         List<TeacherExcelDTO> records = new ArrayList<>();
 
         try (InputStream is = file.getInputStream();
@@ -37,51 +36,45 @@ public class ExcelParser {
 
             Sheet sheet = workbook.getSheetAt(0);
 
-            Iterator<Row> rows = sheet.iterator();
+            for (Row currentRow : sheet) {
+                if (isHeader(currentRow)) {
+                    continue;
+                }
+                String firstName = getStringCellValue(currentRow.getCell(0));
+                String lastName = getStringCellValue(currentRow.getCell(1));
 
-            if (isHeader(rows)) {
-                rows.next();
-            }
-
-            while (rows.hasNext()) {
-                Row currentRow = rows.next();
-
-                String firstName ;
-                String lastName ;
                 LocalDate dateOfBirth;
-                String grade;
-                String division;
+                try {
+                    dateOfBirth = getLocalDate(currentRow.getCell(2));
+                } catch (EmptyCellException e) {
+                    log.info("Teacher {} {} has an invalid date of birth ", firstName, lastName);
+                    continue;
+                }
+                String grade = getStringCellValue(currentRow.getCell(3));
+                String division = getStringCellValue(currentRow.getCell(4));
 
-                try{
-                     firstName = getStringCellValue(currentRow.getCell(0));
-                     lastName = getStringCellValue(currentRow.getCell(1));
-                     dateOfBirth = getLocalDate(currentRow.getCell(2));
-                     grade = getStringCellValue(currentRow.getCell(3));
-                     division = getStringCellValue(currentRow.getCell(4));
-                }catch (Exception e){
+                if (isLastRow(firstName, lastName)) {
                     break;
                 }
-
-
 
                 Grade gradeValue;
                 Division divisionValue;
                 try {
                     gradeValue = Grade.valueOf(grade.toUpperCase());
                     divisionValue = Division.valueOf(division.toUpperCase());
-                }catch (IllegalArgumentException e){
+                } catch (IllegalArgumentException e) {
                     gradeValue = Grade.NONE;
                     divisionValue = Division.NONE;
                 }
 
                 records.add(TeacherExcelDTO.builder()
-                                .account(Account.builder()
-                                        .firstName(firstName)
-                                        .lastName(lastName)
-                                        .dateOfBirth(dateOfBirth)
-                                        .build())
-                                .grade(gradeValue)
-                                .division(divisionValue)
+                        .account(Account.builder()
+                                .firstName(firstName)
+                                .lastName(lastName)
+                                .dateOfBirth(dateOfBirth)
+                                .build())
+                        .grade(gradeValue)
+                        .division(divisionValue)
                         .build());
             }
         }
@@ -89,56 +82,50 @@ public class ExcelParser {
         return records;
     }
 
+    private static boolean isLastRow(String firstName, String lastName) {
+        return (firstName == null || firstName.isEmpty()) && (lastName == null || lastName.isEmpty());
+    }
+
     public List<StudentExcelDTO> parseStudentExcelFile(MultipartFile file) throws IOException {
+        log.info("Parsing Student Sheet");
         List<StudentExcelDTO> records = new ArrayList<>();
 
         try (InputStream is = file.getInputStream();
              Workbook workbook = WorkbookFactory.create(is)) {
 
             Sheet sheet = workbook.getSheetAt(1);
-            Iterator<Row> rows = sheet.iterator();
 
-
-            if (isHeader(rows)) {
-                rows.next();
-            }
-
-            while (rows.hasNext()) {
-                Row currentRow = rows.next();
-
-                String firstName;
-                String lastName ;
-                LocalDate dateOfBirth;
-                String grade;
-                String division;
-                String department;
-                try {
-                     firstName = getStringCellValue(currentRow.getCell(0));
-                     lastName = getStringCellValue(currentRow.getCell(1));
-                     dateOfBirth = getLocalDate(currentRow.getCell(2));
-                     grade = getStringCellValue(currentRow.getCell(3));
-                     division = getStringCellValue(currentRow.getCell(4));
-                     department = getStringCellValue(currentRow.getCell(5));
-                }catch (EmptyCellException e){
-                    break;
+            for (Row currentRow : sheet) {
+                if (isHeader(currentRow)){
+                    continue;
                 }
-
+                String firstName = getStringCellValue(currentRow.getCell(0));
+                String lastName = getStringCellValue(currentRow.getCell(1));
+                LocalDate dateOfBirth;
+                try {
+                    dateOfBirth = getLocalDate(currentRow.getCell(2));
+                } catch (EmptyCellException e) {
+                    continue;
+                }
+                String  grade = getStringCellValue(currentRow.getCell(3));
+                String division = getStringCellValue(currentRow.getCell(4));
+                String department = getStringCellValue(currentRow.getCell(5));
 
                 Department value;
                 try {
                     value = Department.valueOf(department);
-                }catch (IllegalArgumentException e){
+                } catch (IllegalArgumentException e) {
                     value = Department.NONE;
                 }
                 records.add(StudentExcelDTO.builder()
-                                .account(Account.builder()
-                                        .firstName(firstName)
-                                        .lastName(lastName)
-                                        .dateOfBirth(dateOfBirth)
-                                        .build())
-                                .grade(Grade.valueOf(grade))
-                                .division(Division.valueOf(division))
-                                .department(value)
+                        .account(Account.builder()
+                                .firstName(firstName)
+                                .lastName(lastName)
+                                .dateOfBirth(dateOfBirth)
+                                .build())
+                        .grade(Grade.valueOf(grade))
+                        .division(Division.valueOf(division))
+                        .department(value)
                         .build());
             }
         }
@@ -146,17 +133,22 @@ public class ExcelParser {
         return records;
     }
 
-    private boolean isHeader(@NonNull Iterator<Row> rows)  {
-        try{
-            return getStringCellValue(rows.next().getCell(0)).equals("FIRSTNAME");
-        }catch (EmptyCellException e){
-            return  false;
-        }
+    private boolean isHeader(Row currentRow) {
+        String firstCell = getStringCellValue(currentRow.getCell(0));
+        String secondCell = getStringCellValue(currentRow.getCell(1));
+        String thirdCell = getStringCellValue(currentRow.getCell(2));
+        List<String> list = new ArrayList<>();
+        list.add(firstCell);
+        list.add(secondCell);
+        list.add(thirdCell);
+
+        return list.contains("FIRSTNAME") || list.contains("DATE OF BIRTH") || list.contains("LASTNAME");
 
     }
 
-    private String getStringCellValue(Cell cell) throws EmptyCellException {
-        if (cell == null) throw new EmptyCellException("A String cell was left empty.");
+
+    private String getStringCellValue(Cell cell)  {
+        if (cell == null) return "";
         return switch (cell.getCellType()) {
             case STRING -> cell.getStringCellValue().trim();
             case NUMERIC -> String.valueOf((long) cell.getNumericCellValue());
