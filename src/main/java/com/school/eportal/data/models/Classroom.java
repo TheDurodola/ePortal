@@ -3,6 +3,7 @@ package com.school.eportal.data.models;
 import com.school.eportal.data.models.enums.Department;
 import com.school.eportal.data.models.enums.Division;
 import com.school.eportal.data.models.enums.Grade;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.data.annotation.CreatedDate;
@@ -14,7 +15,8 @@ import java.util.List;
 
 @Setter
 @Getter
-@Document
+@Document(collection = "classrooms")
+@Builder
 public class Classroom {
 
     private String id;

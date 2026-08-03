@@ -13,7 +13,7 @@ import java.time.LocalDate;
 @NoArgsConstructor
 public class AccountActivationRequest {
 
-    @NotBlank(message = "AdNo/Username cannot be blank")
+    @NotBlank(message = "School ID cannot be blank")
     private String username;
 
     @Past(message = "User date of birth can only be in the past")

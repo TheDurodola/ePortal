@@ -1,7 +1,9 @@
 package com.school.eportal.controllers;
 
 import com.school.eportal.dtos.requests.AccountActivationRequest;
+import com.school.eportal.dtos.requests.ParentRegistrationRequest;
 import com.school.eportal.dtos.requests.RegisterBulkUsersRequest;
+import com.school.eportal.dtos.responses.ParentRegistrationResponse;
 import com.school.eportal.dtos.responses.RegisterBulkUsersResponse;
 import com.school.eportal.dtos.responses.AccountActivationResponse;
 import com.school.eportal.services.interfaces.AccountService;
@@ -23,21 +25,11 @@ public class AuthController {
 
     private final AccountService accountService;
 
-    @PostMapping(value = "/registration/bulk")
-    public ResponseEntity<?> bulkRegistration(@Valid @RequestBody RegisterBulkUsersRequest request) {
-        log.info("Sign Up Endpoint hit");
-        Map<String, Object> response = new HashMap<>();
-        RegisterBulkUsersResponse data = accountService.bulkRegistration(request);
-        response.put("data", data);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
-    }
-
-    @PatchMapping(value = "/account/activation")
-    public ResponseEntity<?> accountActivation(@Valid @RequestBody AccountActivationRequest request) {
-        Map<String, Object> response = new HashMap<>();
-        AccountActivationResponse data = accountService.accountActivation(request);
-        response.put("data", data);
-        return new ResponseEntity<>(response, HttpStatus.CREATED);
+    @PostMapping(value = "/registration")
+    public ResponseEntity<ParentRegistrationResponse> parentRegistration(@Valid @RequestBody ParentRegistrationRequest request) {
+        log.info("Parental sign up endpoint hit");
+        ParentRegistrationResponse body = accountService.parentRegistration(request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(body);
     }
 
 }

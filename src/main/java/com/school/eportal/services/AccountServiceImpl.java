@@ -12,9 +12,7 @@ import com.school.eportal.data.repositories.Accounts;
 import com.school.eportal.data.repositories.Classrooms;
 import com.school.eportal.data.repositories.DepartmentPathRepo;
 import com.school.eportal.data.repositories.ParentChildRepo;
-import com.school.eportal.dtos.BulkAccountDTO;
-import com.school.eportal.dtos.StudentExcelDTO;
-import com.school.eportal.dtos.TeacherExcelDTO;
+import com.school.eportal.dtos.*;
 import com.school.eportal.dtos.requests.AccountActivationRequest;
 import com.school.eportal.dtos.requests.ParentRegistrationRequest;
 import com.school.eportal.dtos.requests.RegisterBulkUsersRequest;
@@ -132,6 +130,8 @@ public class AccountServiceImpl implements AccountService {
 
     @Override
     public PreRegistrationResponse preRegistration(@NonNull MultipartFile file) {
+        List<StudentExcelDTOResponseBody> students;
+        List<TeacherExcelDTOResponseBody> teachers;
         try {
             validateExcelFile(file);
         } catch (IOException e) {
@@ -141,17 +141,24 @@ public class AccountServiceImpl implements AccountService {
             throw new InvalidPreRegistrationException("Incorrect file name");
         }
         try {
-            processStudents(file);
-            processTeachers(file);
+             students = processStudents(file);
+             teachers = processTeachers(file);
         } catch (IOException e) {
             throw new ExcelParserException(e);
         }
 
-        return PreRegistrationResponse.builder().build();
+        if (students.isEmpty() && teachers.isEmpty()) {
+            throw new InvalidPreRegistrationException("All students and teachers sheets are empty.");
+        }
+        return PreRegistrationResponse.builder()
+                .students(students)
+                .teachers(teachers)
+                .build();
     }
 
-    private void processTeachers(@NonNull MultipartFile file) throws IOException {
+    private @NonNull List<TeacherExcelDTOResponseBody> processTeachers(@NonNull MultipartFile file) throws IOException {
         List<TeacherExcelDTO> teachers = parser.parseTeacherExcelFile(file);
+        List<TeacherExcelDTOResponseBody> response = new ArrayList<>();
         teachers.forEach(teacher -> {
             Account account = teacher.getAccount();
             account.setRole(Role.TEACHER);
@@ -166,11 +173,26 @@ public class AccountServiceImpl implements AccountService {
 
                 classrooms.save(classroom);
             }
+            processList(teacher, response, account);
         });
+        return response;
     }
 
-    private void processStudents(@NonNull MultipartFile file) throws IOException {
+    private static void processList(@NonNull TeacherExcelDTO teacher, @NonNull List<TeacherExcelDTOResponseBody> response, @NonNull Account account) {
+        response.add(
+        TeacherExcelDTOResponseBody.builder()
+                .username(account.getUsername().toUpperCase())
+                .firstName(toProperCase(account.getFirstName()))
+                .lastName(toProperCase(account.getLastName()))
+                .role(account.getRole()).grade(teacher.getGrade())
+                .division(teacher.getDivision())
+                .build()
+        );
+    }
+
+    private @NonNull List<StudentExcelDTOResponseBody> processStudents(@NonNull MultipartFile file) throws IOException {
         List<StudentExcelDTO> students = parser.parseStudentExcelFile(file);
+        List<StudentExcelDTOResponseBody> response = new ArrayList<>();
         students.forEach(student -> {
             Account account = student.getAccount();
             account.setStatus(AccountStatus.INACTIVE);
@@ -190,7 +212,22 @@ public class AccountServiceImpl implements AccountService {
                 departmentPath.addStudent(savedStudent);
                 departmentPathRepo.save(departmentPath);
             }
+            processList(student, response, account, classroom);
         });
+        return response;
+    }
+
+    private static void processList(@NonNull StudentExcelDTO student, @NonNull List<StudentExcelDTOResponseBody> response, @NonNull Account account, @NonNull Classroom classroom) {
+        response.add(
+                StudentExcelDTOResponseBody.builder()
+                        .firstName(toProperCase(account.getFirstName()))
+                        .lastName(toProperCase(account.getLastName()))
+                        .schoolId(account.getUsername().toUpperCase())
+                        .role(account.getRole())
+                        .grade(classroom.getGrade())
+                        .division(classroom.getDivision())
+                        .department(student.getDepartment())
+                .build());
     }
 
     @Override
@@ -236,6 +273,9 @@ public class AccountServiceImpl implements AccountService {
         Account savedAccount = accounts.findByUsername(request.getUsername().toLowerCase())
                 .orElseThrow(() -> new UserNotFoundException("User not found"));
 
+        if (savedAccount.getStatus().equals(AccountStatus.ACTIVE) || savedAccount.getPassword().isBlank()) {
+            throw new InvalidAccountStatusException("Account is already active.");
+        }
         if (!savedAccount.getDateOfBirth().equals(request.getDateOfBirth())){
             throw new InvalidDateOfBirthException("Invalid Date of Birth");
         }
