@@ -5,6 +5,7 @@ import com.school.eportal.data.models.enums.Department;
 import com.school.eportal.data.models.enums.Division;
 import com.school.eportal.data.models.enums.Grade;
 import com.school.eportal.dtos.StudentExcelDTO;
+import com.school.eportal.exceptions.EmptyCellException;
 import com.school.eportal.exceptions.InvalidDateOfBirthException;
 import com.school.eportal.dtos.TeacherExcelDTO;
 import lombok.RequiredArgsConstructor;
@@ -45,11 +46,22 @@ public class ExcelParser {
             while (rows.hasNext()) {
                 Row currentRow = rows.next();
 
-                String firstName = getStringCellValue(currentRow.getCell(1));
-                String lastName = getStringCellValue(currentRow.getCell(2));
-                LocalDate dateOfBirth = getLocalDate(currentRow.getCell(3));
-                String grade = getStringCellValue(currentRow.getCell(4));
-                String division = getStringCellValue(currentRow.getCell(5));
+                String firstName ;
+                String lastName ;
+                LocalDate dateOfBirth;
+                String grade;
+                String division;
+
+                try{
+                     firstName = getStringCellValue(currentRow.getCell(0));
+                     lastName = getStringCellValue(currentRow.getCell(1));
+                     dateOfBirth = getLocalDate(currentRow.getCell(2));
+                     grade = getStringCellValue(currentRow.getCell(3));
+                     division = getStringCellValue(currentRow.getCell(4));
+                }catch (Exception e){
+                    break;
+                }
+
 
 
                 Grade gradeValue;
@@ -94,12 +106,23 @@ public class ExcelParser {
             while (rows.hasNext()) {
                 Row currentRow = rows.next();
 
-                String firstName = getStringCellValue(currentRow.getCell(1));
-                String lastName = getStringCellValue(currentRow.getCell(2));
-                LocalDate dateOfBirth = getLocalDate(currentRow.getCell(3));
-                String grade = getStringCellValue(currentRow.getCell(4));
-                String division = getStringCellValue(currentRow.getCell(5));
-                String department = getStringCellValue(currentRow.getCell(6));
+                String firstName;
+                String lastName ;
+                LocalDate dateOfBirth;
+                String grade;
+                String division;
+                String department;
+                try {
+                     firstName = getStringCellValue(currentRow.getCell(0));
+                     lastName = getStringCellValue(currentRow.getCell(1));
+                     dateOfBirth = getLocalDate(currentRow.getCell(2));
+                     grade = getStringCellValue(currentRow.getCell(3));
+                     division = getStringCellValue(currentRow.getCell(4));
+                     department = getStringCellValue(currentRow.getCell(5));
+                }catch (EmptyCellException e){
+                    break;
+                }
+
 
                 Department value;
                 try {
@@ -123,12 +146,17 @@ public class ExcelParser {
         return records;
     }
 
-    private boolean isHeader(@NonNull Iterator<Row> rows) {
-        return getStringCellValue(rows.next().getCell(0)).equals("FIRSTNAME");
+    private boolean isHeader(@NonNull Iterator<Row> rows)  {
+        try{
+            return getStringCellValue(rows.next().getCell(0)).equals("FIRSTNAME");
+        }catch (EmptyCellException e){
+            return  false;
+        }
+
     }
 
-    private String getStringCellValue(Cell cell) {
-        if (cell == null) return "";
+    private String getStringCellValue(Cell cell) throws EmptyCellException {
+        if (cell == null) throw new EmptyCellException("A String cell was left empty.");
         return switch (cell.getCellType()) {
             case STRING -> cell.getStringCellValue().trim();
             case NUMERIC -> String.valueOf((long) cell.getNumericCellValue());
@@ -136,9 +164,9 @@ public class ExcelParser {
             default -> "";
         };
     }
-    private LocalDate getLocalDate(Cell cell) {
+    private LocalDate getLocalDate(Cell cell) throws EmptyCellException {
         if (cell == null || cell.getCellType() == CellType.BLANK) {
-            throw new InvalidDateOfBirthException("A Date of Birth Cell was left empty.");
+            throw new EmptyCellException("A Date of Birth Cell was left empty.");
         }
 
         // Case 1: Properly formatted Excel Date cell

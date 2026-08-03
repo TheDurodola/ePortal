@@ -3,6 +3,10 @@ spring:
     name: eportal
   mongodb:
     uri: ${MONGODB_URI}
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 5MB
 
 
 management:
@@ -19,3 +23,4 @@ logging:
     com:
      school:
       eportal: trace
+

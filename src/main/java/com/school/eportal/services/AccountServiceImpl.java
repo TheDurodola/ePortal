@@ -137,9 +137,10 @@ public class AccountServiceImpl implements AccountService {
         } catch (IOException e) {
             throw new ValidatorException(e);
         }
-        if (!Objects.equals(file.getOriginalFilename(), "PreRegistration")) {
-            throw new InvalidPreRegistrationException("Incorrect file name");
-        }
+//        if (!Objects.equals(file.getOriginalFilename(), "PreRegistration.xlsx")) {
+//            log.info(file.getOriginalFilename());
+//            throw new InvalidPreRegistrationException("Incorrect file name");
+//        }
         try {
              students = processStudents(file);
              teachers = processTeachers(file);
@@ -164,12 +165,12 @@ public class AccountServiceImpl implements AccountService {
             account.setRole(Role.TEACHER);
             account.setStatus(AccountStatus.INACTIVE);
             account.setUsername("tr" + generateSixRandomNumber());
-            accounts.save(account);
+            Account savedAccount = accounts.save(account);
             if (!teacher.getGrade().equals(Grade.NONE)) {
                 Classroom classroom = classrooms.findByGradeAndDivision(teacher.getGrade(), teacher.getDivision())
                         .orElseThrow(() -> new InvalidClassroomException("Invalid Grade/Division for "
                                 + account.getFirstName() + " " + account.getLastName()));
-                classroom.setClassTeacher(account);
+                classroom.setClassTeacher(savedAccount.getId());
 
                 classrooms.save(classroom);
             }
@@ -203,11 +204,11 @@ public class AccountServiceImpl implements AccountService {
                             , student.getDivision())
                     .orElseThrow(() -> new InvalidClassroomException("Invalid Grade/Division for "
                             + account.getFirstName() + " " + account.getLastName()));
-            classroom.getStudents().add(savedStudent);
+            classroom.addStudent(savedStudent.getId());
             classrooms.save(classroom);
             if (!student.getDepartment().equals(Department.NONE)) {
                 DepartmentPath departmentPath = departmentPathRepo.findFirstByDepartment(student.getDepartment())
-                        .orElseThrow(() -> new DepartmentPathException("Critical: Department Path not found"));
+                        .orElseThrow(() -> new DepartmentPathException("Critical: Department Path "+ student.getDepartment() + " not found"));
 
                 departmentPath.addStudent(savedStudent);
                 departmentPathRepo.save(departmentPath);
@@ -241,7 +242,7 @@ public class AccountServiceImpl implements AccountService {
                 .orElseThrow(() -> new InvalidUsernameException("Invalid Child School ID"));
 
         if (!childAccount.getDateOfBirth().equals(request.getChildDateOfBirth())) {
-            throw new InvalidDateOfBirthException("Incorrect Child DatePfBirth");
+            throw new InvalidDateOfBirthException("Incorrect Child Date Of Birth");
         }
 
         Account newParentAccount = Account.builder()
@@ -256,14 +257,14 @@ public class AccountServiceImpl implements AccountService {
         Account savedParentAccount = accounts.save(newParentAccount);
 
         ParentChild relationship = ParentChild.builder()
-                .parent(savedParentAccount)
-                .child(childAccount)
+                .parent(savedParentAccount.getId())
+                .child(childAccount.getId())
                 .build();
         parentChildRepo.save(relationship);
 
 
             return ParentRegistrationResponse.builder()
-                    .parentFirstName(toProperCase(newParentAccount.getFirstName()))
+                    .parentFirstName(toProperCase(savedParentAccount.getFirstName()))
                     .childFirstName(toProperCase(childAccount.getFirstName()))
                     .build();
     }

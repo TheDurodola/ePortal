@@ -2,9 +2,12 @@ package com.school.eportal.configs;
 
 
 import com.school.eportal.data.models.Classroom;
+import com.school.eportal.data.models.DepartmentPath;
+import com.school.eportal.data.models.enums.Department;
 import com.school.eportal.data.models.enums.Division;
 import com.school.eportal.data.models.enums.Grade;
 import com.school.eportal.data.repositories.Classrooms;
+import com.school.eportal.data.repositories.DepartmentPathRepo;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -21,6 +24,7 @@ import java.util.List;
 public class DataInitializerConfig {
 
     private final Classrooms classrooms;
+    private final DepartmentPathRepo departmentPathRepo;
 
     // Runs at the start of the project
     @Bean
@@ -31,8 +35,25 @@ public class DataInitializerConfig {
             if (classrooms.count()==0) {
                 createClassrooms();
             }
+            if (departmentPathRepo.count()==0){
+                createDepartmentPaths();
+            }
             log.info("System seed entities have been successfully loaded");
         };
+    }
+
+    private void createDepartmentPaths() {
+        log.info("Creating default department paths...");
+        List<DepartmentPath> departmentPaths = new ArrayList<>();
+        for (Department department : Department.values()) {
+            if (!department.equals(Department.NONE)){
+                departmentPaths.add(DepartmentPath.builder()
+                        .department(department)
+                        .build());
+            }
+        }
+        departmentPathRepo.saveAll(departmentPaths);
+        log.info("{} Department paths have been successfully loaded",  departmentPaths.size());
     }
 
     // Creates Classrooms at the start of the project

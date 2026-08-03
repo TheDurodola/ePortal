@@ -18,8 +18,10 @@ public class ParentChild {
     @Id
     private String id;
 
-    private Account parent;
-    private Account child;
+    private String parent;
+    private String child;
+
+
     @CreatedDate
     private Instant createdAt;
 

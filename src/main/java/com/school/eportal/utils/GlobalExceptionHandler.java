@@ -1,8 +1,7 @@
 package com.school.eportal.utils;
 
 import com.school.eportal.dtos.responses.ExceptionResponse;
-import com.school.eportal.exceptions.AccountNotFoundException;
-import com.school.eportal.exceptions.InvalidBulkRegistration;
+import com.school.eportal.exceptions.*;
 import com.school.eportal.security.exceptions.AuthenticationNotSupportedException;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
@@ -30,6 +29,33 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exception);
     }
 
+    @ExceptionHandler(value = DepartmentPathException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull DepartmentPathException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = ExcelParserException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull ExcelParserException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = InvalidAccountStatusException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull InvalidAccountStatusException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
     @ExceptionHandler(value = InvalidBulkRegistration.class)
     public ResponseEntity<ExceptionResponse> handleException(@NonNull InvalidBulkRegistration e) {
         ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
@@ -39,9 +65,53 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
     }
 
+    @ExceptionHandler(value = InvalidClassroomException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull InvalidClassroomException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
 
-    @ExceptionHandler(value = AuthenticationNotSupportedException.class)
-    public ResponseEntity<ExceptionResponse> handleException(@NonNull AuthenticationNotSupportedException e) {
+    @ExceptionHandler(value = InvalidDateOfBirthException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull InvalidDateOfBirthException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = InvalidFileTypeException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull InvalidFileTypeException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = InvalidPreRegistrationException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull InvalidPreRegistrationException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = InvalidUsernameException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull InvalidUsernameException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = UserNotFoundException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull UserNotFoundException e) {
         ExceptionResponse exception = new ExceptionResponse(HttpStatus.UNAUTHORIZED.value(),
                 e.getMessage(),
                 LocalDateTime.now()
@@ -49,8 +119,18 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(exception);
     }
 
+    @ExceptionHandler(value = ValidatorException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull ValidatorException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ProblemDetail handleValidation(MethodArgumentNotValidException ex) {
+    public ProblemDetail handleValidation(@NonNull MethodArgumentNotValidException ex) {
         var fieldErrors = ex.getBindingResult().getFieldErrors().stream()
                 .collect(Collectors.toMap(FieldError::getField, FieldError::getDefaultMessage, (a, b) -> a));
 
@@ -62,5 +142,12 @@ public class GlobalExceptionHandler {
         return problem;
     }
 
-
+    @ExceptionHandler(value = AuthenticationNotSupportedException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull AuthenticationNotSupportedException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.UNAUTHORIZED.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(exception);
+    }
 }

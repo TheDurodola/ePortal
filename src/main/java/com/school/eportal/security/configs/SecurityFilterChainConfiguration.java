@@ -26,10 +26,12 @@ public class SecurityFilterChainConfiguration {
                 .addFilterAt(customAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .addFilterAfter(customAuthorizationFilter, CustomAuthenticationFilter.class)
                 .authorizeHttpRequests((c) -> c
-                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/registration/bulk").hasAnyAuthority("ADMIN", "PRINCIPAL")
-                        .requestMatchers(HttpMethod.PATCH, "/api/v1/auth/password").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/v1/preregistration/activation").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/preregistration/excel").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/auth/registration").permitAll()
                         .anyRequest().authenticated())
                 .build();
+
 
     }
 }

@@ -19,7 +19,7 @@ import org.springframework.web.multipart.MultipartFile;
 public class PreRegistrationController {
     private final AccountService accountService;
 
-    @PostMapping("/excel")
+    @PostMapping(value = "/excel", consumes = "multipart/form-data")
     public ResponseEntity<PreRegistrationResponse> uploadExcelFile(@RequestParam("file") @Valid MultipartFile file) {
         log.info("Pre-Registration: Uploading excel file {} ", file.getOriginalFilename());
 

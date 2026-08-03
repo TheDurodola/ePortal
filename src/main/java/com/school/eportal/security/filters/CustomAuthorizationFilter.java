@@ -25,7 +25,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -89,7 +88,7 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             createErrorResponse(response);
         } catch (JWTDecodeException | TokenExpiredException | MissingClaimException
-                 | AlgorithmMismatchException | SignatureVerificationException e){
+                 | AlgorithmMismatchException | SignatureVerificationException e) {
             log.info("Error processing request", e);
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
             createErrorResponse(response);
@@ -103,13 +102,16 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
     private void createErrorResponse(HttpServletResponse response) throws IOException {
         Map<String, String> error = new HashMap<>();
         error.put("error", "Invalid JWT");
+        response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
         response.setContentType("application/json");
         response.getOutputStream().write(objectMapper.writeValueAsBytes(error));
         response.flushBuffer();
     }
 
     private static boolean isPublicApi(HttpServletRequest request) {
-        return request.getServletPath().equals("/api/v1/auth/password");
-//                || request.getServletPath().equals("/api/v1/auth/registration/bulk");
+        return request.getServletPath().equals("/api/v1/auth/password" )
+                || request.getServletPath().equals("/api/v1/preregistration/excel")
+                || request.getServletPath().equals("/api/v1/auth/registration");
     }
+
 }

@@ -3,10 +3,7 @@ package com.school.eportal.data.models;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.school.eportal.data.models.enums.AccountStatus;
 import com.school.eportal.data.models.enums.Role;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.annotation.LastModifiedDate;
@@ -22,6 +19,7 @@ import java.util.UUID;
 @Document(collection = "accounts")
 @Builder
 @AllArgsConstructor
+@ToString
 public class Account {
     @Id
     private String id;
