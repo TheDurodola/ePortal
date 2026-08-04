@@ -32,7 +32,10 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 import static com.school.eportal.utils.Mutator.mutate;
 import static com.school.eportal.utils.NameFormatter.toProperCase;
@@ -269,14 +272,10 @@ public class AccountServiceImpl implements AccountService {
     }
 
     private Department getDepartment(Account student) {
-        Department department = null;
-        try {
-            department = departmentPathRepo.findByStudentsContaining(student.getId())
-                    .orElseThrow(() -> new DoesntBelongToaDepartmentException("This user doesnt belong to a department")).getDepartment();
-        } catch (DoesntBelongToaDepartmentException e) {
-            department = Department.NONE;
-        }
-        return department;
+      if (departmentPathRepo.findByStudentsContaining(student.getId()).isPresent()) {
+          return departmentPathRepo.findByStudentsContaining(student.getId()).get().getDepartment();
+      }
+      return Department.NONE;
     }
 
     private @NonNull List<TeacherDTO> getAllTeachers() {
@@ -286,17 +285,26 @@ public class AccountServiceImpl implements AccountService {
                 .id(teacher.getId())
                 .firstName(toProperCase(teacher.getFirstName()))
                 .lastName(toProperCase(teacher.getLastName()))
-                .classroom(getClassroomTitle(teacher))
+                .grade(getGrade(teacher))
+                .division(getDivision(teacher))
                 .build()
         ).toList();
     }
 
-    private @NonNull String getClassroomTitle(@NonNull Account teacher) {
-        Classroom classroom = classrooms.findByClassTeacher(teacher.getId()).orElse(null);
-        if (classroom == null) {
-            return "";
+    private Grade getGrade(@NonNull Account teacher) {
+        if (classrooms.findByClassTeacher(teacher.getId()).isPresent()) {
+            Classroom classroom = classrooms.findByClassTeacher(teacher.getId()).get();
+            return classroom.getGrade();
         }
-        return classroom.getGrade().toString()+classroom.getDivision().toString();
+        return Grade.NONE;
+    }
+
+    private Division getDivision(@NonNull Account teacher) {
+        if (classrooms.findByClassTeacher(teacher.getId()).isPresent()) {
+            Classroom classroom = classrooms.findByClassTeacher(teacher.getId()).get();
+            return classroom.getDivision();
+        }
+        return Division.NONE;
     }
 
     private @NonNull List<TeacherDTO> setClassTeacher(@NonNull Account account) {
@@ -309,7 +317,8 @@ public class AccountServiceImpl implements AccountService {
         teachers.add(TeacherDTO.builder()
                 .firstName(toProperCase(teacher.getFirstName()))
                 .lastName(toProperCase(teacher.getLastName()))
-                .classroom(classroom.getGrade().toString() + classroom.getDivision().toString())
+                .grade(getGrade(teacher))
+                .division(getDivision(teacher))
                 .build());
         return teachers;
     }
@@ -320,8 +329,24 @@ public class AccountServiceImpl implements AccountService {
                         .id(getClassTeacherId(child))
                         .firstName(getTeacherFirstName(child))
                         .lastName(getTeacherLastName(child))
-                        .classroom(child.getGrade().toString() + child.getDivision().toString()).build())
+                        .grade(getGrade(child))
+                        .division(getDivision(child))
+                        .build())
                 .toList();
+    }
+
+    private Division getDivision(StudentDTO child) {
+        if (classrooms.findByStudentsContaining(child.getId()).isPresent()) {
+            return classrooms.findByStudentsContaining(child.getId()).get().getDivision();
+        }
+        return Division.NONE;
+    }
+
+    private Grade getGrade(StudentDTO child) {
+        if (classrooms.findByStudentsContaining(child.getId()).isPresent()) {
+            return classrooms.findByStudentsContaining(child.getId()).get().getGrade();
+        }
+        return Grade.NONE;
     }
 
     private @NonNull List<StudentDTO> processClassStudents(Account account, List<StudentDTO> classStudent) {

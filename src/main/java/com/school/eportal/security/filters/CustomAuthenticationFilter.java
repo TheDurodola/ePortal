@@ -59,7 +59,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
             InputStream inputStream = request.getInputStream();
             SignInRequest signInRequest = objectMapper.readValue(inputStream, SignInRequest.class);
             signInRequest.setUsername(signInRequest.getUsername().toLowerCase());
-            log.info("Authentication Initiated with Username: {}", signInRequest.getUsername());
+            log.info("Authentication initiated with Username: {}", signInRequest.getUsername());
             Authentication authentication = new CustomAuthentication(signInRequest.getUsername(), signInRequest.getPassword());
             Authentication result = authenticationManager.authenticate(authentication);
 
@@ -79,7 +79,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
             log.info("JWT token created for user: {}", result.getPrincipal().toString());
             response.flushBuffer();
         } catch (IOException e) {
-            log.error("IOException while sending JWT token to user: {}", e.getMessage());
+            log.error("Critical: IOException while sending JWT token to user: {}", e.getMessage());
             Map<String, String> error = new HashMap<>();
             error.put("error", e.getMessage());
             error.put("message", "Something went wrong...");
