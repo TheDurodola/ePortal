@@ -11,4 +11,5 @@ import java.util.Optional;
 @Repository
 public interface DepartmentPathRepo extends MongoRepository<DepartmentPath,String> {
     Optional<DepartmentPath> findFirstByDepartment(Department department);
+    Optional<DepartmentPath> findByStudentsContaining(String studentId);
 }

@@ -4,22 +4,20 @@ import com.school.eportal.data.models.Account;
 import com.school.eportal.data.models.Classroom;
 import com.school.eportal.data.models.DepartmentPath;
 import com.school.eportal.data.models.ParentChild;
-import com.school.eportal.data.models.enums.AccountStatus;
-import com.school.eportal.data.models.enums.Department;
-import com.school.eportal.data.models.enums.Grade;
-import com.school.eportal.data.models.enums.Role;
+import com.school.eportal.data.models.enums.*;
 import com.school.eportal.data.repositories.Accounts;
 import com.school.eportal.data.repositories.Classrooms;
 import com.school.eportal.data.repositories.DepartmentPathRepo;
 import com.school.eportal.data.repositories.ParentChildRepo;
 import com.school.eportal.dtos.*;
+import com.school.eportal.dtos.profile.ProfileDTO;
+import com.school.eportal.dtos.profile.StudentDTO;
+import com.school.eportal.dtos.profile.TeacherDTO;
 import com.school.eportal.dtos.requests.AccountActivationRequest;
+import com.school.eportal.dtos.requests.GetProfileRequest;
 import com.school.eportal.dtos.requests.ParentRegistrationRequest;
 import com.school.eportal.dtos.requests.RegisterBulkUsersRequest;
-import com.school.eportal.dtos.responses.AccountActivationResponse;
-import com.school.eportal.dtos.responses.ParentRegistrationResponse;
-import com.school.eportal.dtos.responses.PreRegistrationResponse;
-import com.school.eportal.dtos.responses.RegisterBulkUsersResponse;
+import com.school.eportal.dtos.responses.*;
 import com.school.eportal.exceptions.*;
 import com.school.eportal.security.dtos.responses.AccountResponse;
 import com.school.eportal.services.interfaces.AccountService;
@@ -27,6 +25,7 @@ import com.school.eportal.utils.ExcelParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -121,7 +120,6 @@ public class AccountServiceImpl implements AccountService {
         passCount.add(String.valueOf(accounts1.size()));
 
 
-
         return RegisterBulkUsersResponse.builder()
                 .data(prepareResponse(failCount, listOfRejectedUsernames, passCount))
                 .build();
@@ -129,6 +127,7 @@ public class AccountServiceImpl implements AccountService {
     }
 
     @Override
+    @Transactional
     public PreRegistrationResponse preRegistration(@NonNull MultipartFile file) {
         List<StudentExcelDTOResponseBody> students;
         List<TeacherExcelDTOResponseBody> teachers;
@@ -137,13 +136,10 @@ public class AccountServiceImpl implements AccountService {
         } catch (IOException e) {
             throw new ValidatorException(e);
         }
-//        if (!Objects.equals(file.getOriginalFilename(), "PreRegistration.xlsx")) {
-//            log.info(file.getOriginalFilename());
-//            throw new InvalidPreRegistrationException("Incorrect file name");
-//        }
+
         try {
-             students = processStudents(file);
-             teachers = processTeachers(file);
+            students = processStudents(file);
+            teachers = processTeachers(file);
         } catch (IOException e) {
             throw new ExcelParserException(e);
         }
@@ -157,84 +153,11 @@ public class AccountServiceImpl implements AccountService {
                 .build();
     }
 
-    private @NonNull List<TeacherExcelDTOResponseBody> processTeachers(@NonNull MultipartFile file) throws IOException {
-        List<TeacherExcelDTO> teachers = parser.parseTeacherExcelFile(file);
-        List<TeacherExcelDTOResponseBody> response = new ArrayList<>();
-        teachers.forEach(teacher -> {
-            Account account = teacher.getAccount();
-            account.setRole(Role.TEACHER);
-            account.setStatus(AccountStatus.INACTIVE);
-            account.setUsername("tr" + generateSixRandomNumber());
-            Account savedAccount = accounts.save(account);
-            if (!teacher.getGrade().equals(Grade.NONE)) {
-                Classroom classroom = classrooms.findByGradeAndDivision(teacher.getGrade(), teacher.getDivision())
-                        .orElseThrow(() -> new InvalidClassroomException("Invalid Grade/Division for "
-                                + account.getFirstName() + " " + account.getLastName()));
-                classroom.setClassTeacher(savedAccount.getId());
-
-                classrooms.save(classroom);
-            }
-            processList(teacher, response, account);
-        });
-        return response;
-    }
-
-    private static void processList(@NonNull TeacherExcelDTO teacher, @NonNull List<TeacherExcelDTOResponseBody> response, @NonNull Account account) {
-        response.add(
-        TeacherExcelDTOResponseBody.builder()
-                .username(account.getUsername().toUpperCase())
-                .firstName(toProperCase(account.getFirstName()))
-                .lastName(toProperCase(account.getLastName()))
-                .role(account.getRole()).grade(teacher.getGrade())
-                .division(teacher.getDivision())
-                .build()
-        );
-    }
-
-    private @NonNull List<StudentExcelDTOResponseBody> processStudents(@NonNull MultipartFile file) throws IOException {
-        List<StudentExcelDTO> students = parser.parseStudentExcelFile(file);
-        List<StudentExcelDTOResponseBody> response = new ArrayList<>();
-        students.forEach(student -> {
-            Account account = student.getAccount();
-            account.setStatus(AccountStatus.INACTIVE);
-            account.setRole(Role.STUDENT);
-            account.setUsername("st" + generateSixRandomNumber());
-            Account savedStudent = accounts.save(account);
-            Classroom classroom = classrooms.findByGradeAndDivision(student.getGrade()
-                            , student.getDivision())
-                    .orElseThrow(() -> new InvalidClassroomException("Invalid Grade/Division for "
-                            + account.getFirstName() + " " + account.getLastName()));
-            classroom.addStudent(savedStudent.getId());
-            classrooms.save(classroom);
-            if (!student.getDepartment().equals(Department.NONE)) {
-                DepartmentPath departmentPath = departmentPathRepo.findFirstByDepartment(student.getDepartment())
-                        .orElseThrow(() -> new DepartmentPathException("Critical: Department Path "+ student.getDepartment() + " not found"));
-
-                departmentPath.addStudent(savedStudent);
-                departmentPathRepo.save(departmentPath);
-            }
-            processList(student, response, account, classroom);
-        });
-        return response;
-    }
-
-    private static void processList(@NonNull StudentExcelDTO student, @NonNull List<StudentExcelDTOResponseBody> response, @NonNull Account account, @NonNull Classroom classroom) {
-        response.add(
-                StudentExcelDTOResponseBody.builder()
-                        .firstName(toProperCase(account.getFirstName()))
-                        .lastName(toProperCase(account.getLastName()))
-                        .schoolId(account.getUsername().toUpperCase())
-                        .role(account.getRole())
-                        .grade(classroom.getGrade())
-                        .division(classroom.getDivision())
-                        .department(student.getDepartment())
-                .build());
-    }
-
     @Override
-    public ParentRegistrationResponse parentRegistration(ParentRegistrationRequest request){
+    @Transactional
+    public ParentRegistrationResponse parentRegistration(ParentRegistrationRequest request) {
         mutate(request);
-        if (accounts.existsByUsername(request.getUsername())){
+        if (accounts.existsByUsername(request.getUsername())) {
             throw new InvalidUsernameException("Email already taken");
         }
 
@@ -263,10 +186,10 @@ public class AccountServiceImpl implements AccountService {
         parentChildRepo.save(relationship);
 
 
-            return ParentRegistrationResponse.builder()
-                    .parentFirstName(toProperCase(savedParentAccount.getFirstName()))
-                    .childFirstName(toProperCase(childAccount.getFirstName()))
-                    .build();
+        return ParentRegistrationResponse.builder()
+                .parentFirstName(toProperCase(savedParentAccount.getFirstName()))
+                .childFirstName(toProperCase(childAccount.getFirstName()))
+                .build();
     }
 
     @Override
@@ -277,7 +200,7 @@ public class AccountServiceImpl implements AccountService {
         if (savedAccount.getStatus().equals(AccountStatus.ACTIVE) || savedAccount.getPassword().isBlank()) {
             throw new InvalidAccountStatusException("Account is already active.");
         }
-        if (!savedAccount.getDateOfBirth().equals(request.getDateOfBirth())){
+        if (!savedAccount.getDateOfBirth().equals(request.getDateOfBirth())) {
             throw new InvalidDateOfBirthException("Invalid Date of Birth");
         }
 
@@ -291,6 +214,266 @@ public class AccountServiceImpl implements AccountService {
                 .build();
     }
 
+    @Override
+    public GetProfileResponse getProfile(@NonNull GetProfileRequest request) {
+        ProfileDTO profile = new ProfileDTO();
+        Account account = accounts.findById(request.getUserID())
+                .orElseThrow(() -> new UserNotFoundException("User not found"));
+
+        processProfile(profile, account);
+
+        if (account.getRole().equals(Role.PARENT)) {
+            List<StudentDTO> children = processChildren(account);
+            profile.setStudents(children);
+            profile.setTeachers(processTeachers(children));
+        }
+        if (account.getRole().equals(Role.TEACHER)) {
+            List<StudentDTO> classStudent = new ArrayList<>();
+            try {
+                classStudent = processClassStudents(account, classStudent);
+            }catch (NoSuchClassroomException e){
+                log.info("non class teacher");
+            }
+            profile.setStudents(classStudent);
+        }
+        if (account.getRole().equals(Role.STUDENT)) {
+            profile.setTeachers(setClassTeacher(account));
+        }
+        if (account.getRole().equals(Role.PRINCIPAL)) {
+            log.info("Retrieving Principal Profile");
+            profile.setStudents(getAllStudents());
+            profile.setTeachers(getAllTeachers());
+        } else throw new InvalidUserException("Invalid User");
+
+
+        return GetProfileResponse.builder()
+                .profile(profile)
+                .build();
+    }
+
+    private @NonNull List<StudentDTO> getAllStudents() {
+        List<Account> allStudents = accounts.findAllByRole(Role.STUDENT);
+        return allStudents.stream()
+                .map(student -> {
+                    Department department = getDepartment(student);
+                    return StudentDTO.builder()
+                            .id(student.getId())
+                            .firstName(toProperCase(student.getFirstName()))
+                            .lastName(toProperCase(student.getLastName()))
+                            .grade(classrooms.findByStudentsContaining(student.getId()).orElseThrow().getGrade())
+                            .division(classrooms.findByStudentsContaining(student.getId()).orElseThrow().getDivision())
+                            .department(department)
+                            .build();
+                })
+                .toList();
+    }
+
+    private Department getDepartment(Account student) {
+        Department department = null;
+        try {
+            department = departmentPathRepo.findByStudentsContaining(student.getId())
+                    .orElseThrow(() -> new DoesntBelongToaDepartmentException("This user doesnt belong to a department")).getDepartment();
+        } catch (DoesntBelongToaDepartmentException e) {
+            department = Department.NONE;
+        }
+        return department;
+    }
+
+    private @NonNull List<TeacherDTO> getAllTeachers() {
+        List<Account> allTeachers = accounts.findAllByRole(Role.TEACHER);
+
+        return allTeachers.stream().map(teacher -> TeacherDTO.builder()
+                .id(teacher.getId())
+                .firstName(toProperCase(teacher.getFirstName()))
+                .lastName(toProperCase(teacher.getLastName()))
+                .classroom(getClassroomTitle(teacher))
+                .build()
+        ).toList();
+    }
+
+    private @NonNull String getClassroomTitle(@NonNull Account teacher) {
+        Classroom classroom = classrooms.findByClassTeacher(teacher.getId()).orElse(null);
+        if (classroom == null) {
+            return "";
+        }
+        return classroom.getGrade().toString()+classroom.getDivision().toString();
+    }
+
+    private @NonNull List<TeacherDTO> setClassTeacher(@NonNull Account account) {
+        List<TeacherDTO> teachers = new ArrayList<>();
+        Classroom classroom = classrooms.findByStudentsContaining(account.getId())
+                .orElseThrow(() -> new NoSuchClassroomException("Student doesn't belong to a class yet."));
+        Account teacher = accounts.findById(classroom.getClassTeacher())
+                .orElseThrow(() -> new NoSuchClassroomException("Class doesn't have a class teacher yet."));
+
+        teachers.add(TeacherDTO.builder()
+                .firstName(toProperCase(teacher.getFirstName()))
+                .lastName(toProperCase(teacher.getLastName()))
+                .classroom(classroom.getGrade().toString() + classroom.getDivision().toString())
+                .build());
+        return teachers;
+    }
+
+    private @NonNull List<TeacherDTO> processTeachers(@NonNull List<StudentDTO> children) {
+        return children.stream()
+                .map(child -> TeacherDTO.builder()
+                        .id(getClassTeacherId(child))
+                        .firstName(getTeacherFirstName(child))
+                        .lastName(getTeacherLastName(child))
+                        .classroom(child.getGrade().toString() + child.getDivision().toString()).build())
+                .toList();
+    }
+
+    private @NonNull List<StudentDTO> processClassStudents(Account account, List<StudentDTO> classStudent) {
+        List<String> students = classrooms.findByClassTeacher(account.getId()).orElseThrow(() -> new NoSuchClassroomException("This teacher isn't a class teacher")).getStudents();
+        classStudent = accounts.findAllById(students).stream()
+                .map(student -> StudentDTO.builder()
+                        .id(student.getId())
+                        .firstName(toProperCase(student.getFirstName()))
+                        .lastName(toProperCase(student.getLastName()))
+                        .grade(classrooms.findByStudentsContaining(student.getId()).orElseThrow().getGrade())
+                        .division(classrooms.findByStudentsContaining(student.getId()).orElseThrow().getDivision())
+                        .department(getDepartment(student))
+                        .build())
+                .toList();
+        return classStudent;
+    }
+
+    private @Nullable String getTeacherLastName(@NonNull StudentDTO child) {
+        Division division = child.getDivision();
+        Grade grade = child.getGrade();
+        try {
+            Classroom classroom = classrooms.findByGradeAndDivision(grade, division).orElseThrow(() -> new NoSuchClassroomException("This Child doesn't belong to a class"));
+            Account teacher = accounts.findById(classroom.getClassTeacher()).orElseThrow(() -> new UserNotFoundException("Teacher not found"));
+            return teacher.getLastName();
+        } catch (NoSuchClassroomException e) {
+            return null;
+        }
+    }
+
+    private @Nullable String getTeacherFirstName(@NonNull StudentDTO child) {
+        Division division = child.getDivision();
+        Grade grade = child.getGrade();
+        try {
+            Classroom classroom = classrooms.findByGradeAndDivision(grade, division).orElseThrow(() -> new NoSuchClassroomException("This Child doesn't belong to a class"));
+            Account teacher = accounts.findById(classroom.getClassTeacher()).orElseThrow(() -> new UserNotFoundException("Teacher not found"));
+            return teacher.getFirstName();
+        } catch (NoSuchClassroomException e) {
+            return null;
+        }
+    }
+
+    private @Nullable String getClassTeacherId(@NonNull StudentDTO child) {
+        Division division = child.getDivision();
+        Grade grade = child.getGrade();
+        try {
+            Classroom classroom = classrooms.findByGradeAndDivision(grade, division).orElseThrow(() -> new NoSuchClassroomException("This Child doesn't belong to a class"));
+            Account teacher = accounts.findById(classroom.getClassTeacher()).orElseThrow(() -> new UserNotFoundException("Teacher not found"));
+            return teacher.getId();
+        } catch (NoSuchClassroomException e) {
+            return null;
+        }
+    }
+
+    private @NonNull List<StudentDTO> processChildren(@NonNull Account account) {
+        List<String> childrenId = parentChildRepo.findAllByParent(account.getId()).stream()
+                .map(ParentChild::getChild)
+                .toList();
+        return accounts.findAllById(childrenId)
+                .stream()
+                .map(child ->
+                        StudentDTO.builder()
+                                .id(child.getId())
+                                .firstName(toProperCase(child.getFirstName()))
+                                .lastName(toProperCase(child.getLastName()))
+                                .grade(classrooms.findByStudentsContaining(child.getId()).orElseThrow().getGrade())
+                                .division(classrooms.findByStudentsContaining(child.getId()).orElseThrow().getDivision())
+                                .department(getDepartment(child))
+                                .build())
+                .toList();
+    }
+
+    private static void processProfile(@NonNull ProfileDTO profile, @NonNull Account account) {
+        profile.setFirstName(toProperCase(account.getFirstName()));
+        profile.setLastName(toProperCase(account.getLastName()));
+        profile.setDateOfBirth(account.getDateOfBirth());
+        profile.setRole(account.getRole());
+        profile.setUsername(account.getUsername().toUpperCase());
+    }
+
+    private @NonNull List<TeacherExcelDTOResponseBody> processTeachers(@NonNull MultipartFile file) throws IOException {
+        List<TeacherExcelDTO> teachers = parser.parseTeacherExcelFile(file);
+        List<TeacherExcelDTOResponseBody> response = new ArrayList<>();
+        teachers.forEach(teacher -> {
+            Account account = teacher.getAccount();
+            account.setRole(Role.TEACHER);
+            account.setStatus(AccountStatus.INACTIVE);
+            account.setUsername("tr" + generateSixRandomNumber());
+            Account savedAccount = accounts.save(account);
+            if (!teacher.getGrade().equals(Grade.NONE)) {
+                Classroom classroom = classrooms.findByGradeAndDivision(teacher.getGrade(), teacher.getDivision())
+                        .orElseThrow(() -> new InvalidClassroomException("Invalid Grade/Division for "
+                                + account.getFirstName() + " " + account.getLastName()));
+                classroom.setClassTeacher(savedAccount.getId());
+
+                classrooms.save(classroom);
+            }
+            processList(teacher, response, account);
+        });
+        return response;
+    }
+
+    private @NonNull List<StudentExcelDTOResponseBody> processStudents(@NonNull MultipartFile file) throws IOException {
+        List<StudentExcelDTO> students = parser.parseStudentExcelFile(file);
+        List<StudentExcelDTOResponseBody> response = new ArrayList<>();
+        students.forEach(student -> {
+            Account account = student.getAccount();
+            account.setStatus(AccountStatus.INACTIVE);
+            account.setRole(Role.STUDENT);
+            account.setUsername("st" + generateSixRandomNumber());
+            Account savedStudent = accounts.save(account);
+            Classroom classroom = classrooms.findByGradeAndDivision(student.getGrade()
+                            , student.getDivision())
+                    .orElseThrow(() -> new InvalidClassroomException("Invalid Grade/Division for "
+                            + account.getFirstName() + " " + account.getLastName()));
+            classroom.addStudent(savedStudent.getId());
+            classrooms.save(classroom);
+            if (!student.getDepartment().equals(Department.NONE)) {
+                DepartmentPath departmentPath = departmentPathRepo.findFirstByDepartment(student.getDepartment())
+                        .orElseThrow(() -> new DepartmentPathException("Critical: Department Path " + student.getDepartment() + " not found"));
+
+                departmentPath.addStudent(savedStudent);
+                departmentPathRepo.save(departmentPath);
+            }
+            processList(student, response, account, classroom);
+        });
+        return response;
+    }
+
+    private static void processList(@NonNull StudentExcelDTO student, @NonNull List<StudentExcelDTOResponseBody> response, @NonNull Account account, @NonNull Classroom classroom) {
+        response.add(
+                StudentExcelDTOResponseBody.builder()
+                        .firstName(toProperCase(account.getFirstName()))
+                        .lastName(toProperCase(account.getLastName()))
+                        .schoolId(account.getUsername().toUpperCase())
+                        .role(account.getRole())
+                        .grade(classroom.getGrade())
+                        .division(classroom.getDivision())
+                        .department(student.getDepartment())
+                        .build());
+    }
+
+    private static void processList(@NonNull TeacherExcelDTO teacher, @NonNull List<TeacherExcelDTOResponseBody> response, @NonNull Account account) {
+        response.add(
+                TeacherExcelDTOResponseBody.builder()
+                        .username(account.getUsername().toUpperCase())
+                        .firstName(toProperCase(account.getFirstName()))
+                        .lastName(toProperCase(account.getLastName()))
+                        .role(account.getRole()).grade(teacher.getGrade())
+                        .division(teacher.getDivision())
+                        .build()
+        );
+    }
 
     private static @NonNull Map<String, Map<String, List<String>>> prepareResponse(List<String> failCount, List<String> listOfRejectedUsernames, List<String> passCount) {
         Map<String, Map<String, List<String>>> data = new HashMap<>();
@@ -304,5 +487,4 @@ public class AccountServiceImpl implements AccountService {
         data.put("failed", failed);
         return data;
     }
-
 }

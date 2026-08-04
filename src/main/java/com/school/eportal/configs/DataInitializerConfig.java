@@ -73,6 +73,10 @@ public class DataInitializerConfig {
                 }
             }
         }
+        newClassrooms.add(Classroom.builder()
+                .division(Division.NONE)
+                .grade(Grade.NONE)
+                .build());
         classrooms.saveAll(newClassrooms);
         log.info("A total of {} classrooms have been created", newClassrooms.size());
     }

@@ -26,9 +26,10 @@ public class Classroom {
     @Id
     private String id;
 
-    @Indexed
+    @Indexed(unique = true, sparse = true)
     private String classTeacher;
 
+    @Indexed
     @Builder.Default
     private List<String> students = new ArrayList<>();
 
@@ -46,5 +47,5 @@ public class Classroom {
 
     public void addStudent(String studentId) {
         students.add(studentId);
-    }
+}
 }

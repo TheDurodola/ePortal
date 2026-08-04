@@ -27,8 +27,9 @@ public class SecurityFilterChainConfiguration {
                 .addFilterAfter(customAuthorizationFilter, CustomAuthenticationFilter.class)
                 .authorizeHttpRequests((c) -> c
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/preregistration/activation").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/preregistration/excel").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/registration").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/preregistration/excel").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/profile").hasAuthority("ACTIVE")
                         .anyRequest().authenticated())
                 .build();
 
