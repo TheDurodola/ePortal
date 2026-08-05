@@ -1,6 +1,5 @@
 package com.school.eportal.dtos.profile;
 
-import com.school.eportal.data.models.Classroom;
 import com.school.eportal.data.models.enums.Division;
 import com.school.eportal.data.models.enums.Grade;
 import lombok.Builder;
@@ -16,6 +15,4 @@ public class TeacherDTO {
     private String lastName;
     private Grade grade;
     private Division division;
-
-    // TODO: Change classroom from to String to Grade and Division
 }

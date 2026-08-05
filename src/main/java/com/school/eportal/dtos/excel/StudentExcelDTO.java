@@ -1,6 +1,7 @@
-package com.school.eportal.dtos;
+package com.school.eportal.dtos.excel;
 
 import com.school.eportal.data.models.Account;
+import com.school.eportal.data.models.enums.Department;
 import com.school.eportal.data.models.enums.Division;
 import com.school.eportal.data.models.enums.Grade;
 import lombok.Builder;
@@ -10,8 +11,9 @@ import lombok.Setter;
 @Setter
 @Getter
 @Builder
-public class TeacherExcelDTO {
+public class StudentExcelDTO {
     private Account account;
     private Grade grade;
+    private Department department;
     private Division division;
 }

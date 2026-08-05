@@ -1,4 +1,4 @@
-package com.school.eportal.dtos;
+package com.school.eportal.dtos.excel;
 
 import com.school.eportal.data.models.enums.Division;
 import com.school.eportal.data.models.enums.Grade;

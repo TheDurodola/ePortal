@@ -3,11 +3,13 @@ package com.school.eportal.configs;
 
 import com.school.eportal.data.models.Classroom;
 import com.school.eportal.data.models.DepartmentPath;
+import com.school.eportal.data.models.Session;
 import com.school.eportal.data.models.enums.Department;
 import com.school.eportal.data.models.enums.Division;
 import com.school.eportal.data.models.enums.Grade;
 import com.school.eportal.data.repositories.Classrooms;
 import com.school.eportal.data.repositories.DepartmentPathRepo;
+import com.school.eportal.data.repositories.Sessions;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
@@ -15,6 +17,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
+import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,6 +29,7 @@ public class DataInitializerConfig {
 
     private final Classrooms classrooms;
     private final DepartmentPathRepo departmentPathRepo;
+    private final Sessions sessions;
 
     // Runs at the start of the project
     @Bean
@@ -38,8 +43,19 @@ public class DataInitializerConfig {
             if (departmentPathRepo.count()==0){
                 createDepartmentPaths();
             }
+            if (sessions.count()==0){
+                createCurrentSession();
+            }
             log.info("System seed entities have been successfully loaded");
         };
+    }
+
+    private void createCurrentSession() {
+        LocalDate currentDate = LocalDate.now();
+        Month month = currentDate.getMonth();
+        if (month.getValue()>=7) {
+            sessions.save(Session.builder().startYear(currentDate.getYear()).endYear(currentDate.getYear()+1).isCurrent(true).build());
+        }else sessions.save(Session.builder().startYear(currentDate.getYear()-1).endYear(currentDate.getYear()).isCurrent(true).build());
     }
 
     private void createDepartmentPaths() {

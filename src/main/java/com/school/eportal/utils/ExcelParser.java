@@ -4,12 +4,15 @@ import com.school.eportal.data.models.Account;
 import com.school.eportal.data.models.enums.Department;
 import com.school.eportal.data.models.enums.Division;
 import com.school.eportal.data.models.enums.Grade;
-import com.school.eportal.dtos.StudentExcelDTO;
-import com.school.eportal.dtos.TeacherExcelDTO;
+import com.school.eportal.dtos.excel.SchoolFeeExcelExtractDTO;
+import com.school.eportal.dtos.excel.StudentExcelDTO;
+import com.school.eportal.dtos.excel.TeacherExcelDTO;
 import com.school.eportal.exceptions.EmptyCellException;
+import com.school.eportal.exceptions.ExcelParserException;
 import com.school.eportal.exceptions.InvalidDateOfBirthException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
+import org.jspecify.annotations.NonNull;
 import org.springframework.stereotype.Component;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -82,10 +85,6 @@ public class ExcelParser {
         return records;
     }
 
-    private static boolean isLastRow(String firstName, String lastName) {
-        return (firstName == null || firstName.isEmpty()) && (lastName == null || lastName.isEmpty());
-    }
-
     public List<StudentExcelDTO> parseStudentExcelFile(MultipartFile file) throws IOException {
         log.info("Parsing Student Sheet");
         List<StudentExcelDTO> records = new ArrayList<>();
@@ -133,7 +132,46 @@ public class ExcelParser {
         return records;
     }
 
-    private boolean isHeader(Row currentRow) {
+
+    public List<SchoolFeeExcelExtractDTO> parseSchoolFeeExcelFile(MultipartFile file) throws IOException {
+        log.info("Parsing School Fees Sheet");
+
+        List<SchoolFeeExcelExtractDTO> records = new ArrayList<>();
+
+        try (InputStream is = file.getInputStream();
+             Workbook workbook = WorkbookFactory.create(is)) {
+
+            Sheet sheet = workbook.getSheetAt(0);
+
+            for (Row currentRow : sheet) {
+                if (isHeader(currentRow)){
+                    continue;
+                }
+                String session = getStringCellValue(currentRow.getCell(0));
+                String departmentInString = getStringCellValue(currentRow.getCell(1));
+                String grade = getStringCellValue(currentRow.getCell(2));
+                long tuition = getLongCellValue(currentRow.getCell(3));
+
+                Department department;
+                if (departmentInString == null || departmentInString.isBlank()) {
+                    department = Department.NONE;
+                }else department = Department.valueOf(departmentInString);
+
+                records.add(SchoolFeeExcelExtractDTO
+                        .builder()
+                                .schoolName(session)
+                                .tuition(tuition)
+                                .department(department)
+                                .grade(Grade.valueOf(grade.toUpperCase()))
+                        .build());
+            }
+        }
+
+        return records;
+    }
+
+
+    private boolean isHeader(@NonNull Row currentRow) {
         String firstCell = getStringCellValue(currentRow.getCell(0));
         String secondCell = getStringCellValue(currentRow.getCell(1));
         String thirdCell = getStringCellValue(currentRow.getCell(2));
@@ -146,6 +184,9 @@ public class ExcelParser {
 
     }
 
+    private static boolean isLastRow(String firstName, String lastName) {
+        return (firstName == null || firstName.isEmpty()) && (lastName == null || lastName.isEmpty());
+    }
 
     private String getStringCellValue(Cell cell)  {
         if (cell == null) return "";
@@ -185,6 +226,28 @@ public class ExcelParser {
         }
 
         throw new InvalidDateOfBirthException("Unsupported cell format for Date of Birth.");
+    }
+
+    private Long getLongCellValue(Cell cell) {
+        if (cell == null) return null;
+        return switch (cell.getCellType()) {
+            case NUMERIC -> (long) cell.getNumericCellValue();
+            case STRING -> parseStringToLong(cell.getStringCellValue().trim());
+            case BLANK -> null;
+            default -> throw new ExcelParserException(
+                    "Unsupported cell type for numeric value: " + cell.getCellType()
+                            + " at row " + cell.getRowIndex() + ", column " + cell.getColumnIndex());
+        };
+    }
+
+    private Long parseStringToLong(String value) {
+        if (value.isEmpty()) return null;
+        try {
+            return Long.parseLong(value);
+        } catch (NumberFormatException e) {
+            throw new ExcelParserException(
+                    "Expected a numeric value but found '" + value + "'");
+        }
     }
 
 }

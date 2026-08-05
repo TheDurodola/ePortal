@@ -24,3 +24,6 @@ logging:
      school:
       eportal: trace
 
+paystack:
+  secret:
+    key: ${PAYSTACK_SECRET_KEY}

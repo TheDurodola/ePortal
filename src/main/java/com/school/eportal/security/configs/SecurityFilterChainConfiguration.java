@@ -28,8 +28,10 @@ public class SecurityFilterChainConfiguration {
                 .authorizeHttpRequests((c) -> c
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/preregistration/activation").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/registration").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/preregistration/excel").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/profile").hasAuthority("ACTIVE")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/preregistration/excel"
+                        ).hasAnyAuthority("PRINCIPAL", "ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/profile")
+                        .hasAuthority("ACTIVE")
                         .anyRequest().authenticated())
                 .build();
 
