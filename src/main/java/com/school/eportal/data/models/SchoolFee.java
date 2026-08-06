@@ -8,6 +8,7 @@ import lombok.Setter;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.util.Date;
 
@@ -27,9 +28,9 @@ public class SchoolFee {
 
     private long tuitionInKobo;
 
-    private int firstTermMinPercentage;
+    private BigDecimal firstTermMinPercentage;
 
-    private int secondTermMinPercentage;
+    private BigDecimal secondTermMinPercentage;
 
-    private int thirdTermMinPercentage;
+    private BigDecimal thirdTermMinPercentage;
 }

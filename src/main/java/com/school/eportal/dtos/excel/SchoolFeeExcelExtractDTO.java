@@ -6,12 +6,17 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Setter
 @Getter
 @Builder
 public class SchoolFeeExcelExtractDTO {
-    private String schoolName;
+    private String session;
     private Department department;
     private Grade grade;
-    private long tuition;
+    private BigDecimal tuition;
+    private BigDecimal firstTermMinPercentage;
+    private BigDecimal secondTermMinPercentage;
+    private BigDecimal thirdTermMinPercentage;
 }

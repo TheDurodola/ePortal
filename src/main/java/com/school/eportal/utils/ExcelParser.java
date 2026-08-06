@@ -9,6 +9,7 @@ import com.school.eportal.dtos.excel.StudentExcelDTO;
 import com.school.eportal.dtos.excel.TeacherExcelDTO;
 import com.school.eportal.exceptions.EmptyCellException;
 import com.school.eportal.exceptions.ExcelParserException;
+import com.school.eportal.exceptions.InvalidCellValueException;
 import com.school.eportal.exceptions.InvalidDateOfBirthException;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
@@ -18,12 +19,17 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
+
+import static com.school.eportal.utils.Validator.isValidSessionFormat;
 
 @Slf4j
 @Component
@@ -39,8 +45,9 @@ public class ExcelParser {
 
             Sheet sheet = workbook.getSheetAt(0);
 
+            int lastRowNum = sheet.getLastRowNum();
             for (Row currentRow : sheet) {
-                if (isHeader(currentRow)) {
+                if (isRegistrationHeader(currentRow)) {
                     continue;
                 }
                 String firstName = getStringCellValue(currentRow.getCell(0));
@@ -55,10 +62,6 @@ public class ExcelParser {
                 }
                 String grade = getStringCellValue(currentRow.getCell(3));
                 String division = getStringCellValue(currentRow.getCell(4));
-
-                if (isLastRow(firstName, lastName)) {
-                    break;
-                }
 
                 Grade gradeValue;
                 Division divisionValue;
@@ -79,6 +82,9 @@ public class ExcelParser {
                         .grade(gradeValue)
                         .division(divisionValue)
                         .build());
+                if (isLastRow(lastRowNum, currentRow)) {
+                    break;
+                }
             }
         }
 
@@ -94,8 +100,9 @@ public class ExcelParser {
 
             Sheet sheet = workbook.getSheetAt(1);
 
+            int lastRowNum = sheet.getLastRowNum();
             for (Row currentRow : sheet) {
-                if (isHeader(currentRow)){
+                if (isRegistrationHeader(currentRow)){
                     continue;
                 }
                 String firstName = getStringCellValue(currentRow.getCell(0));
@@ -106,6 +113,7 @@ public class ExcelParser {
                 } catch (EmptyCellException e) {
                     continue;
                 }
+
                 String  grade = getStringCellValue(currentRow.getCell(3));
                 String division = getStringCellValue(currentRow.getCell(4));
                 String department = getStringCellValue(currentRow.getCell(5));
@@ -126,6 +134,10 @@ public class ExcelParser {
                         .division(Division.valueOf(division))
                         .department(value)
                         .build());
+
+                if (isLastRow(lastRowNum, currentRow)) {
+                    break;
+                }
             }
         }
 
@@ -142,16 +154,23 @@ public class ExcelParser {
              Workbook workbook = WorkbookFactory.create(is)) {
 
             Sheet sheet = workbook.getSheetAt(0);
-
+            int lastRowNum = sheet.getLastRowNum();
             for (Row currentRow : sheet) {
-                if (isHeader(currentRow)){
+                if (isSchoolFeeHeader(currentRow)){
                     continue;
                 }
                 String session = getStringCellValue(currentRow.getCell(0));
                 String departmentInString = getStringCellValue(currentRow.getCell(1));
                 String grade = getStringCellValue(currentRow.getCell(2));
-                long tuition = getLongCellValue(currentRow.getCell(3));
+                BigDecimal tuition = getBigDecimalCellValue(currentRow.getCell(3));
+                BigDecimal firstTermMinPercentage = getBigDecimalCellValue(currentRow.getCell(4));
+                BigDecimal secondTermMinPercentage = getBigDecimalCellValue(currentRow.getCell(5));
+                BigDecimal thirdTermMinPercentage = getBigDecimalCellValue(currentRow.getCell(6));
 
+                if (Validator.isValidSessionFormat(session)) {
+                    throw new ExcelParserException(identifyCell(currentRow.getCell(0)) + " invalid session format." +
+                            "kindly use 2019/20 or 2019/2020");
+                }
                 Department department;
                 if (departmentInString == null || departmentInString.isBlank()) {
                     department = Department.NONE;
@@ -159,11 +178,21 @@ public class ExcelParser {
 
                 records.add(SchoolFeeExcelExtractDTO
                         .builder()
-                                .schoolName(session)
-                                .tuition(tuition)
-                                .department(department)
-                                .grade(Grade.valueOf(grade.toUpperCase()))
+                            .session(session)
+                            .tuition(tuition)
+                            .department(department)
+                            .firstTermMinPercentage(firstTermMinPercentage
+                                    .round(new  MathContext(2, RoundingMode.HALF_UP)))
+                            .secondTermMinPercentage(secondTermMinPercentage
+                                    .round(new  MathContext(2, RoundingMode.HALF_UP)))
+                            .thirdTermMinPercentage(thirdTermMinPercentage
+                                    .round(new  MathContext(2, RoundingMode.HALF_UP)))
+                            .grade(Grade.valueOf(grade.toUpperCase()))
                         .build());
+
+                if (isLastRow(lastRowNum, currentRow)) {
+                    break;
+                }
             }
         }
 
@@ -171,7 +200,21 @@ public class ExcelParser {
     }
 
 
-    private boolean isHeader(@NonNull Row currentRow) {
+    private boolean isRegistrationHeader(@NonNull Row currentRow) {
+        String firstCell = getStringCellValue(currentRow.getCell(0));
+        String secondCell = getStringCellValue(currentRow.getCell(1));
+        String thirdCell = getStringCellValue(currentRow.getCell(2));
+        List<String> list = new ArrayList<>();
+        list.add(firstCell);
+        list.add(secondCell);
+        list.add(thirdCell);
+
+        return list.contains("S/N") || list.contains("DEPARTMENT") ||
+                list.contains("GRADE") || list.contains("TUITION");
+
+    }
+
+    private boolean isSchoolFeeHeader(@NonNull Row currentRow) {
         String firstCell = getStringCellValue(currentRow.getCell(0));
         String secondCell = getStringCellValue(currentRow.getCell(1));
         String thirdCell = getStringCellValue(currentRow.getCell(2));
@@ -184,29 +227,55 @@ public class ExcelParser {
 
     }
 
-    private static boolean isLastRow(String firstName, String lastName) {
-        return (firstName == null || firstName.isEmpty()) && (lastName == null || lastName.isEmpty());
+    private static boolean isLastRow(int lastRowNumber, @NonNull Row currentCell) {
+        return currentCell.getRowNum() == lastRowNumber;
     }
 
     private String getStringCellValue(Cell cell)  {
-        if (cell == null) return "";
+        if (cell == null) throw new  InvalidCellValueException(" A cell in the spreadsheet is null.");
         return switch (cell.getCellType()) {
             case STRING -> cell.getStringCellValue().trim();
             case NUMERIC -> String.valueOf((long) cell.getNumericCellValue());
             case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
-            default -> "";
+            default -> throw new InvalidCellValueException(identifyCell(cell)  + " is having an invalid format.");
         };
     }
+
+    private BigDecimal getBigDecimalCellValue(Cell cell) {
+
+        if (cell == null) throw new InvalidCellValueException("A cell is null;");
+        return switch (cell.getCellType()) {
+            case NUMERIC -> BigDecimal.valueOf(cell.getNumericCellValue());
+            case STRING -> {
+                String raw = cell.getStringCellValue().trim();
+                if (raw.isEmpty()) throw new InvalidCellValueException(identifyCell(cell)  +" cell is null;");;
+                try {
+                    yield new BigDecimal(raw);
+                } catch (NumberFormatException e) {
+                    throw new InvalidCellValueException(identifyCell(cell) + " is having an invalid format.");
+                }
+            }
+            case FORMULA -> BigDecimal.valueOf(cell.getNumericCellValue()); // only safe if evaluator already ran
+            default -> throw new InvalidCellValueException(identifyCell(cell)  + " is having an invalid format.");
+        };
+    }
+
+    private static @NonNull String identifyCell(@NonNull Cell cell) {
+        return "Sheet:" + cell.getSheet().getSheetName() + "Cell:" +
+                cell.getAddress().toString();
+    }
+
+
     private LocalDate getLocalDate(Cell cell) throws EmptyCellException {
         if (cell == null || cell.getCellType() == CellType.BLANK) {
-            throw new EmptyCellException("A Date of Birth Cell was left empty.");
+            throw new EmptyCellException("A Date of Birth cell null.");
         }
 
         // Case 1: Properly formatted Excel Date cell
         if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
             LocalDateTime dateTime  = cell.getLocalDateTimeCellValue();
             if (dateTime == null) {
-                throw new InvalidDateOfBirthException("Date of Birth cell contains an invalid numeric date.");
+                throw new InvalidDateOfBirthException(identifyCell(cell) + " cell contains an invalid numeric date.");
             }
             return dateTime.toLocalDate();
         }
@@ -215,17 +284,17 @@ public class ExcelParser {
         if (cell.getCellType() == CellType.STRING) {
             String textValue = cell.getStringCellValue().trim();
             if (textValue.isEmpty()) {
-                throw new InvalidDateOfBirthException("A Date of Birth Cell was left empty.");
+                throw new InvalidDateOfBirthException(identifyCell(cell) + " was left empty.");
             }
             try {
                 // Adjust the format pattern to match expected incoming string formats
                 return LocalDate.parse(textValue, DateTimeFormatter.ISO_LOCAL_DATE);
             } catch (DateTimeParseException e) {
-                throw new InvalidDateOfBirthException("Invalid date text format: " + textValue);
+                throw new InvalidDateOfBirthException(identifyCell(cell) + " invalid date text format: " + textValue);
             }
         }
 
-        throw new InvalidDateOfBirthException("Unsupported cell format for Date of Birth.");
+        throw new InvalidDateOfBirthException( identifyCell(cell) + " unsupported cell format for Date of Birth.");
     }
 
     private Long getLongCellValue(Cell cell) {
