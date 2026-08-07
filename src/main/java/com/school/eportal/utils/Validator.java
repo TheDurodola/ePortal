@@ -20,9 +20,10 @@ import java.util.regex.Pattern;
 public class Validator {
 
     private static final Detector DETECTOR = TikaConfig.getDefaultConfig().getDetector();
-    private static final Pattern SESSION_PATTERN = Pattern.compile("\\b\\d{4}/(?:\\d{2}|\\d{4})\\b");
-
-    // Set of valid MIME types for Microsoft Excel spreadsheets
+    private static final Pattern SESSION_PATTERN = Pattern.compile("^\\d{4}(?:/(?:\\d{2}|\\d{4}))?$");
+    private static final Pattern SINGLE_YEAR_PATTERN = Pattern.compile("^\\d{4}$");
+    private static final Pattern SHORT_SESSION_PATTERN = Pattern.compile("^\\d{4}/\\d{2}$");
+    private static final Pattern FULL_SESSION_PATTERN = Pattern.compile("^\\d{4}/\\d{4}$");
     private static final Set<String> EXCEL_MIME_TYPES = Set.of(
             "application/vnd.ms-excel",                                               // .xls (Legacy OLE2)
             "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",      // .xlsx (OOXML)
@@ -31,6 +32,27 @@ public class Validator {
             "application/vnd.openxmlformats-officedocument.spreadsheetml.template", // .xltx
             "application/vnd.ms-excel.sheet.binary.macroEnabled.12"                  // .xlsb
     );
+
+    public static boolean isSingleYear(String input) {
+        if (input == null) {
+            return false;
+        }
+        return SINGLE_YEAR_PATTERN.matcher(input).matches();
+    }
+
+    public static boolean isShortSession(String input) {
+        if (input == null) {
+            return false;
+        }
+        return SHORT_SESSION_PATTERN.matcher(input).matches();
+    }
+
+    public static boolean isFullSession(String input) {
+        if (input == null) {
+            return false;
+        }
+        return FULL_SESSION_PATTERN.matcher(input).matches();
+    }
 
     public static boolean isValidSessionFormat(String input) {
         if (input == null) {
@@ -54,8 +76,7 @@ public class Validator {
         }
     }
 
-
-    public static void validateExcelFile(MultipartFile file) throws IOException {
+    public static void validateExcelFile(@NonNull MultipartFile file) throws IOException {
         if (!isExcelFile(file.getInputStream(), file.getOriginalFilename())) {
             throw new InvalidFileTypeException("Invalid file type: File is not a valid Microsoft Excel document.");
         }

@@ -1,34 +1,26 @@
-package com.school.eportal.data.models;
+package com.school.eportal.dtos;
 
 import com.school.eportal.data.models.enums.Department;
 import com.school.eportal.data.models.enums.Grade;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigDecimal;
-import java.math.BigInteger;
-import java.util.Date;
 
 @Setter
 @Getter
 @Builder
-@Document(collection = "schoolFees")
-public class SchoolFee {
-    @Id
-    private String id;
-
-    private String sessionId;
+public class SchoolResponseData {
+    private String session;
 
     private Department department;
 
     private Grade grade;
 
-    private long tuitionInKobo;
+    private BigDecimal tuition;
 
-    private long total;
+    private BigDecimal total;
 
     private BigDecimal firstTermMinPercentage;
 

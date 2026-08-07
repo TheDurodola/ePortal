@@ -7,10 +7,7 @@ import com.school.eportal.data.models.enums.Grade;
 import com.school.eportal.dtos.excel.SchoolFeeExcelExtractDTO;
 import com.school.eportal.dtos.excel.StudentExcelDTO;
 import com.school.eportal.dtos.excel.TeacherExcelDTO;
-import com.school.eportal.exceptions.EmptyCellException;
-import com.school.eportal.exceptions.ExcelParserException;
-import com.school.eportal.exceptions.InvalidCellValueException;
-import com.school.eportal.exceptions.InvalidDateOfBirthException;
+import com.school.eportal.exceptions.*;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.jspecify.annotations.NonNull;
@@ -28,8 +25,6 @@ import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
-
-import static com.school.eportal.utils.Validator.isValidSessionFormat;
 
 @Slf4j
 @Component
@@ -175,7 +170,7 @@ public class ExcelParser {
                 if (departmentInString == null || departmentInString.isBlank()) {
                     department = Department.NONE;
                 }else department = Department.valueOf(departmentInString);
-
+                validatePercentages(firstTermMinPercentage, secondTermMinPercentage, thirdTermMinPercentage, currentRow);
                 records.add(SchoolFeeExcelExtractDTO
                         .builder()
                             .session(session)
@@ -199,6 +194,35 @@ public class ExcelParser {
         return records;
     }
 
+    private void validatePercentages(BigDecimal firstTermMinPercentage, BigDecimal secondTermMinPercentage, BigDecimal thirdTermMinPercentage, Row row) {
+        validateIfPercentagesAreWithinZeroAndOneHundred(firstTermMinPercentage, secondTermMinPercentage, thirdTermMinPercentage);
+        if (!(firstTermMinPercentage.compareTo(secondTermMinPercentage) <= 0)) {
+            throw new InvalidPercentageException("Row:" + row.getRowNum() + "First term minimum percentage can't be greater than the Second term minimum percentage");
+        }
+
+        if (!(secondTermMinPercentage.compareTo(thirdTermMinPercentage) <= 0)) {
+            throw new InvalidPercentageException("Row:" + row.getRowNum() + "Second term minimum percentage can't be greater than the Third term minimum percentage");
+        }
+
+    }
+
+    private static void validateIfPercentagesAreWithinZeroAndOneHundred(BigDecimal firstTermMinPercentage, BigDecimal secondTermMinPercentage, BigDecimal thirdTermMinPercentage) {
+        if (isGreaterThanOneHundredPercentage(firstTermMinPercentage, secondTermMinPercentage, thirdTermMinPercentage)) {
+            throw new InvalidPercentageException("Percentage can't be greater than 100%");
+        }
+
+        if (isLessThanZeroPercentage(firstTermMinPercentage, secondTermMinPercentage, thirdTermMinPercentage)) {
+            throw new InvalidPercentageException("Percentage can't be greater than 100%");
+        }
+    }
+
+    private static boolean isGreaterThanOneHundredPercentage(@NonNull BigDecimal firstTermMinPercentage, BigDecimal secondTermMinPercentage, BigDecimal thirdTermMinPercentage) {
+        return firstTermMinPercentage.compareTo(BigDecimal.valueOf(100)) > 0 || secondTermMinPercentage.compareTo(BigDecimal.valueOf(100)) > 0 || thirdTermMinPercentage.compareTo(BigDecimal.valueOf(100)) > 0;
+    }
+
+    private static boolean isLessThanZeroPercentage(@NonNull BigDecimal firstTermMinPercentage, BigDecimal secondTermMinPercentage, BigDecimal thirdTermMinPercentage) {
+        return firstTermMinPercentage.compareTo(BigDecimal.ZERO) < 0 || secondTermMinPercentage.compareTo(BigDecimal.ZERO) < 0 || thirdTermMinPercentage.compareTo(BigDecimal.ZERO) < 0;
+    }
 
     private boolean isRegistrationHeader(@NonNull Row currentRow) {
         String firstCell = getStringCellValue(currentRow.getCell(0));

@@ -8,12 +8,14 @@ import com.school.eportal.dtos.responses.CreateSchoolFeesResponse;
 import com.school.eportal.dtos.responses.GetSchoolFeesTransactionsResponse;
 import com.school.eportal.dtos.responses.PaySchoolFeesResponse;
 import com.school.eportal.dtos.responses.VerifySchoolFeesPaymentResponse;
+import com.school.eportal.proxy.paymentGateway.dtos.webhook.PaystackWebhookPayload;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.multipart.MultipartFile;
 
 public interface SchoolFeeService {
         CreateSchoolFeesResponse createSchoolFees(MultipartFile file);
-        PaySchoolFeesResponse paySchoolFees(PaySchoolFeesRequest request);
-        void confirmSchoolFeesTransaction(ConfirmSchoolSchoolTransactionRequest request);
+        PaySchoolFeesResponse paySchoolFees(PaySchoolFeesRequest request, Authentication authentication);
+        void confirmSchoolFeesTransaction(PaystackWebhookPayload request);
         VerifySchoolFeesPaymentResponse verifySchoolFees(VerifySchoolFeesPaymentRequest request);
         GetSchoolFeesTransactionsResponse getSchoolFeesTransaction(GetSchoolFeesTransactionsRequest request);
 }

@@ -1,7 +1,9 @@
 package com.school.eportal.proxy.paymentGateway.dtos;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public record PaymentInitiationData(
-        String authorizationUrl,
-        String accessCode,
+        @JsonProperty("authorization_url") String authorizationUrl,
+        @JsonProperty("access_code") String accessCode,
         String reference
 ) {}

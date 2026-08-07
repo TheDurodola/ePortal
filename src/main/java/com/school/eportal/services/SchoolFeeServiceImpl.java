@@ -1,9 +1,10 @@
 package com.school.eportal.services;
 
-import com.school.eportal.data.models.SchoolFee;
-import com.school.eportal.data.repositories.SchoolFees;
-import com.school.eportal.dtos.excel.SchoolFeeExcelExtractDTO;
-import com.school.eportal.dtos.requests.ConfirmSchoolSchoolTransactionRequest;
+import com.school.eportal.data.models.*;
+import com.school.eportal.data.models.enums.Department;
+import com.school.eportal.data.models.enums.TransactionStatus;
+import com.school.eportal.data.repositories.*;
+import com.school.eportal.dtos.SchoolResponseData;
 import com.school.eportal.dtos.requests.GetSchoolFeesTransactionsRequest;
 import com.school.eportal.dtos.requests.PaySchoolFeesRequest;
 import com.school.eportal.dtos.requests.VerifySchoolFeesPaymentRequest;
@@ -11,21 +12,30 @@ import com.school.eportal.dtos.responses.CreateSchoolFeesResponse;
 import com.school.eportal.dtos.responses.GetSchoolFeesTransactionsResponse;
 import com.school.eportal.dtos.responses.PaySchoolFeesResponse;
 import com.school.eportal.dtos.responses.VerifySchoolFeesPaymentResponse;
-import com.school.eportal.exceptions.ValidatorException;
+import com.school.eportal.exceptions.*;
+import com.school.eportal.proxy.paymentGateway.PaymentGatewayClient;
+import com.school.eportal.proxy.paymentGateway.dtos.requests.InitiatePaymentRequest;
+import com.school.eportal.proxy.paymentGateway.dtos.responses.InitiatePaymentResponse;
+import com.school.eportal.proxy.paymentGateway.dtos.webhook.PaystackWebhookPayload;
 import com.school.eportal.services.interfaces.SchoolFeeService;
 import com.school.eportal.utils.ExcelParser;
-import com.school.eportal.utils.Validator;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.NonNull;
+import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 
+import static com.school.eportal.utils.NairaConverter.koboToNaira;
 import static com.school.eportal.utils.NairaConverter.nairaToKobo;
-import static com.school.eportal.utils.Validator.isValidSessionFormat;
-import static com.school.eportal.utils.Validator.validateExcelFile;
+import static com.school.eportal.utils.RandomPicker.generateRandomAlphanumeric;
+import static com.school.eportal.utils.Validator.*;
 
 @Slf4j
 @Service
@@ -34,6 +44,12 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
 
     private final ExcelParser parser;
     private final SchoolFees schoolFees;
+    private final Sessions sessions;
+    private final FeeLedgers feeLedgers;
+    private final PaymentGatewayClient paymentGatewayClient;
+    private final Accounts accounts;
+    private final DepartmentPathRepo departmentPathRepo;
+    private final Classrooms classrooms;
 
     @Override
     public CreateSchoolFeesResponse createSchoolFees(MultipartFile file) {
@@ -41,46 +57,140 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
         try {
             validateExcelFile(file);
             fees = parser.parseSchoolFeeExcelFile(file).stream()
-                    .map(excelExtract -> SchoolFee
-                            .builder()
-                                .sessionId(createSession(excelExtract.getSession()))
-                                .department(excelExtract.getDepartment())
-                                .grade(excelExtract.getGrade())
-                                .tuitionInKobo(nairaToKobo(excelExtract.getTuition()))
-                                .firstTermMinPercentage(excelExtract.getFirstTermMinPercentage())
-                                .secondTermMinPercentage(excelExtract.getSecondTermMinPercentage())
-                                .thirdTermMinPercentage(excelExtract.getThirdTermMinPercentage())
-                            .build())
+                    .map(excelExtract ->
+                            SchoolFee
+                                    .builder()
+                                    .sessionId(createSession(excelExtract.getSession()))
+                                    .department(excelExtract.getDepartment())
+                                    .grade(excelExtract.getGrade())
+                                    .tuitionInKobo(nairaToKobo(excelExtract.getTuition()))
+                                    .total(nairaToKobo(getTotal(excelExtract.getTuition())))
+                                    .firstTermMinPercentage(excelExtract.getFirstTermMinPercentage())
+                                    .secondTermMinPercentage(excelExtract.getSecondTermMinPercentage())
+                                    .thirdTermMinPercentage(excelExtract.getThirdTermMinPercentage())
+                                    .build())
                     .toList();
 
         } catch (IOException e) {
             throw new ValidatorException(e);
         }
-        return null;
+        List<SchoolFee> savedSchoolFees = schoolFees.saveAll(fees);
+
+        List<SchoolResponseData> data = savedSchoolFees.stream().map(fee -> SchoolResponseData.builder()
+                .session(getSession(fee.getSessionId()))
+                .department(fee.getDepartment())
+                .grade(fee.getGrade())
+                .tuition(koboToNaira(fee.getTuitionInKobo()))
+                .total(koboToNaira(fee.getTotal()))
+                .firstTermMinPercentage(fee.getFirstTermMinPercentage())
+                .secondTermMinPercentage(fee.getSecondTermMinPercentage())
+                .thirdTermMinPercentage(fee.getThirdTermMinPercentage())
+                .build())
+                .toList();
+
+        return CreateSchoolFeesResponse.builder()
+                .count(data.size())
+                .data(data)
+                .build();
     }
 
-    private String createSession(String session) {
+    private @NonNull String getSession(String sessionId) {
+        Session session = sessions.findById(sessionId).orElse(null);
+        assert session != null;
+        return session.getStartYear() + "/" + session.getEndYear();
+    }
 
-        return session;
+    private BigDecimal getTotal(BigDecimal tuition) {
+        return tuition;
+    }
+
+
+    private String createSession(@NonNull String session) {
+        int startYearInInteger = Integer.parseInt(session.substring(0, 3));
+        if (sessions.findByStartYear(startYearInInteger).isPresent()) {
+            return sessions.findByStartYear(startYearInInteger).get().getId();
+        }
+
+        Session sessionObj;
+        if (isSingleYear(session)) {
+            int sessionInInt = Integer.parseInt(session);
+            sessionObj = Session.builder().startYear(sessionInInt).endYear(sessionInInt + 1).isCurrent(false).build();
+        }
+        if (isShortSession(session)) {
+            sessionObj = Session.builder().startYear(startYearInInteger).endYear(startYearInInteger+1).isCurrent(false).build();
+        }
+
+        if (isFullSession(session)) {
+            sessionObj = Session.builder().startYear(startYearInInteger).endYear(startYearInInteger+1).isCurrent(false).build();
+        } else throw new InvalidSessionException("Input Session could not be parsed into Session Object");
+
+        Session savedSession = sessions.save(sessionObj);
+
+        return savedSession.getId();
     }
 
     @Override
-    public PaySchoolFeesResponse paySchoolFees(PaySchoolFeesRequest request) {
-        return null;
+    public PaySchoolFeesResponse paySchoolFees(PaySchoolFeesRequest request, Authentication authentication) {
+
+
+        Account parent = accounts.findById(Objects.requireNonNull(authentication.getPrincipal()).toString()).orElseThrow(() -> new UserNotFoundException("Parent account not found"));
+        List<FeeLedger> outstandings = feeLedgers.findByStudentIdAndStatusOrStatus(request.getStudentId(), FeeLedgerStatus.UNPAID, FeeLedgerStatus.PARTIALLY_PAID);
+        if (!outstandings.isEmpty()) {
+            if (outstandings.size() == 1) {
+                FeeLedger feeLedger = outstandings.getFirst();
+
+            }
+
+
+        }
+        Session session = sessions.findByIsCurrentTrue().orElseThrow(() -> new InvalidSessionException("Payment cannot be made yet as the session is not yet publish"));
+        Account student = accounts.findById(request.getStudentId()).orElseThrow(() -> new UserNotFoundException("User Not Found"));
+        Classroom classroom = classrooms.findByStudentsContaining(student.getId()).orElseThrow(() -> new NoSuchClassroomException("No Class Room Found for this student"));
+
+        Department department;
+        try {
+            department = departmentPathRepo.findByStudentsContaining(student.getId()).orElseThrow(() -> new UserNotFoundException("User Not Found")).getDepartment();
+        } catch (UserNotFoundException e) {
+            department = Department.NONE;
+        }
+        String reference = generateSchoolFeesReference(session);
+        long total = schoolFees.findBySessionIdAndDepartmentAndGrade(session.getId(), department, classroom.getGrade()).orElseThrow(() -> new SchoolFeesException("User Not Found")).getTotal();
+
+        FeeLedger.builder().studentId(student.getId()).academicSessionId(session.getId()).totalExpectedAmount(koboToNaira(total)).status(FeeLedgerStatus.UNPAID)
+                .build();
+        FeeTransaction.builder().amount(request.getAmount()).attemptedAt(Instant.now()).status(TransactionStatus.PENDING).paymentReference(reference).build();
+
+
+        InitiatePaymentResponse response = paymentGatewayClient.initiatePayment(InitiatePaymentRequest.builder()
+                .email(parent.getUsername())
+                .amount(nairaToKobo(request.getAmount()))
+                .reference(reference)
+                .build());
+
+
+        return PaySchoolFeesResponse.builder()
+                .redirectUrl(response.getData().authorizationUrl())
+                .build();
     }
 
+    private static @NonNull String generateSchoolFeesReference(@NonNull Session session) {
+        return session.getStartYear() +  generateRandomAlphanumeric() + session.getEndYear() ;
+    }
+
+
+    // For Paystack WebSocket
     @Override
-    public void confirmSchoolFeesTransaction(ConfirmSchoolSchoolTransactionRequest request) {
+    public void confirmSchoolFeesTransaction(PaystackWebhookPayload request) {
 
     }
-
-
 
 
     @Override
     public VerifySchoolFeesPaymentResponse verifySchoolFees(VerifySchoolFeesPaymentRequest request) {
         return null;
     }
+
+
 
     @Override
     public GetSchoolFeesTransactionsResponse getSchoolFeesTransaction(GetSchoolFeesTransactionsRequest request) {
