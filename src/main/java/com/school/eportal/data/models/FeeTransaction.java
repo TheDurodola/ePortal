@@ -12,13 +12,16 @@ import java.time.Instant;
 
 @Setter
 @Getter
-@Document
+@Document(collection = "feeTransactions")
 @Builder
 public class FeeTransaction {
+
     @Id
     private String id;
-    private BigDecimal amount;
+    private long amount;
     private Instant attemptedAt;
-    private TransactionStatus status; // PENDING, CONFIRMED, FAILED
+    private TransactionStatus status;
     private String paymentReference;
+    private String madeBy;
+    private String feeLedger;
 }

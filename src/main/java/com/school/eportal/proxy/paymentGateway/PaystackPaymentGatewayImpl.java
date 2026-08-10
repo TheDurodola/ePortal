@@ -9,6 +9,12 @@ import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.util.HexFormat;
+
 @Component
 public class PaystackPaymentGatewayImpl implements PaymentGatewayClient {
 
@@ -26,5 +32,20 @@ public class PaystackPaymentGatewayImpl implements PaymentGatewayClient {
                 .body(request)
                 .retrieve()
                 .body(InitiatePaymentResponse.class);
+    }
+
+    private boolean isValidSignature(String payload, String signature, String secretKey) {
+        try {
+            Mac hmac = Mac.getInstance("HmacSHA512");
+            hmac.init(new SecretKeySpec(secretKey.getBytes(StandardCharsets.UTF_8), "HmacSHA512"));
+            byte[] hash = hmac.doFinal(payload.getBytes(StandardCharsets.UTF_8));
+            String computed = HexFormat.of().formatHex(hash);
+            return MessageDigest.isEqual(
+                    computed.getBytes(StandardCharsets.UTF_8),
+                    signature.getBytes(StandardCharsets.UTF_8)
+            );
+        } catch (Exception e) {
+            return false;
+        }
     }
 }

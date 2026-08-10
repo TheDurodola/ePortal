@@ -9,7 +9,7 @@ import com.school.eportal.data.repositories.Accounts;
 import com.school.eportal.data.repositories.Classrooms;
 import com.school.eportal.data.repositories.DepartmentPathRepo;
 import com.school.eportal.data.repositories.ParentChildRepo;
-import com.school.eportal.dtos.*;
+import com.school.eportal.dtos.BulkAccountDTO;
 import com.school.eportal.dtos.excel.StudentExcelDTO;
 import com.school.eportal.dtos.excel.StudentExcelDTOResponseBody;
 import com.school.eportal.dtos.excel.TeacherExcelDTO;

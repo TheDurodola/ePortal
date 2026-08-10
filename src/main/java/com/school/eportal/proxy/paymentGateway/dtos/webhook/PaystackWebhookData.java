@@ -1,25 +1,45 @@
 package com.school.eportal.proxy.paymentGateway.dtos.webhook;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.school.eportal.proxy.paymentGateway.dtos.Customer;
+import com.school.eportal.proxy.paymentGateway.dtos.EventLog;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import org.apache.tomcat.util.http.parser.Authorization;
 
-import java.time.OffsetDateTime;
-import java.util.Map;
-
+@Data
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PaystackWebhookData {
     private Long id;
-    String domain;
-    String status;
-    String reference;
-    Long amount;
-    String message;
-    @JsonProperty("gateway_response") String gatewayResponse;
-    @JsonProperty("paid_at") OffsetDateTime paidAt;
-    @JsonProperty("createdAt")
-    OffsetDateTime createdAt;
-    String channel;
-    String currency;
-    Map<String, Object> metadata;
-    Customer customer;
-    Authorization authorization;
+    private String domain;
+    private String status;
+    private String reference;
+    private Long amount;
+    private String message;
+
+    @JsonProperty("gateway_response")
+    private String gatewayResponse;
+
+    @JsonProperty("paid_at")
+    private String paidAt;
+
+    @JsonProperty("created_at")
+    private String createdAt;
+
+    private String channel;
+    private String currency;
+
+    @JsonProperty("ip_address")
+    private String ipAddress;
+
+    private Object metadata;
+    private EventLog log;
+    private Long fees;
+    private Customer customer;
+    private Authorization authorization;
+    private Object plan;
 }

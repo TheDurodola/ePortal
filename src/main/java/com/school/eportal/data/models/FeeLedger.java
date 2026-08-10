@@ -1,8 +1,9 @@
 package com.school.eportal.data.models;
 
-import com.school.eportal.data.models.FeeTransaction;
+import com.school.eportal.data.models.enums.FeeLedgerStatus;
 import com.school.eportal.data.models.enums.TransactionStatus;
 import lombok.*;
+import org.jspecify.annotations.NonNull;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
@@ -25,34 +26,12 @@ public class FeeLedger {
     private String id;
 
     private String studentId;
+    private String verificationCode;
     private String academicSessionId;
-    private BigDecimal totalExpectedAmount;
+    private long totalExpectedAmount;
     private FeeLedgerStatus status = FeeLedgerStatus.UNPAID;
 
     @Builder.Default
-    private List<FeeTransaction> transactions = new ArrayList<>();
+    private List<String> transactions = new ArrayList<>();
 
-    public BigDecimal getAmountPaid() {
-        return transactions.stream()
-                .filter(t -> t.getStatus() == TransactionStatus.CONFIRMED)
-                .map(FeeTransaction::getAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-    }
-
-
-
-    public boolean hasOutstandingBalance() {
-        return getAmountPaid().compareTo(totalExpectedAmount) < 0;
-    }
-
-    public void recordAttempt(FeeTransaction transaction) {
-        if (transaction.getStatus()== TransactionStatus.CONFIRMED) {
-            if (getAmountPaid().add(transaction.getAmount()).equals(totalExpectedAmount)) {
-                setStatus(FeeLedgerStatus.FULLY_PAID);
-            }else  {
-                setStatus(FeeLedgerStatus.PARTIALLY_PAID);
-            }
-        }
-        this.transactions.add(transaction);
-    }
 }
