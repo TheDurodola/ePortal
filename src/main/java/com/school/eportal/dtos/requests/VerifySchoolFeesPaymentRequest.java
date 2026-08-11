@@ -8,5 +8,6 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 public class VerifySchoolFeesPaymentRequest {
-    private String transactionId;
+    private String studentID;
+    private String session;
 }

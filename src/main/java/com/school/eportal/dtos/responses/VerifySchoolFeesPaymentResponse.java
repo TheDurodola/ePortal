@@ -5,7 +5,10 @@ import lombok.*;
 @Setter
 @Getter
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
 public class VerifySchoolFeesPaymentResponse {
+    private String studentFirstName;
+    private String studentLastName;
+    private boolean qualifiedForFirstTerm;
+    private boolean qualifiedForSecondTerm;
+    private boolean qualifiedForThirdTerm;
 }

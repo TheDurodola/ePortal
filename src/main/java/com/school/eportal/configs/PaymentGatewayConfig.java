@@ -19,4 +19,15 @@ public class PaymentGatewayConfig {
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + secret)
                 .build();
     }
+
+    private static String secretKey;
+
+    @Value("${paystack.secret.key}")
+    public void setSecretKey(String secretKey) {
+        PaymentGatewayConfig.secretKey = secretKey;
+    }
+
+    public static String getSecretKey() {
+        return secretKey;
+    }
 }

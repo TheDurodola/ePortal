@@ -1,13 +1,17 @@
 package com.school.eportal.services;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.school.eportal.data.models.*;
 import com.school.eportal.data.models.enums.Department;
 import com.school.eportal.data.models.enums.FeeLedgerStatus;
+import com.school.eportal.data.models.enums.Role;
 import com.school.eportal.data.models.enums.TransactionStatus;
 import com.school.eportal.data.repositories.*;
 import com.school.eportal.dtos.SchoolResponseData;
 import com.school.eportal.dtos.requests.GetSchoolFeesTransactionsRequest;
 import com.school.eportal.dtos.requests.PaySchoolFeesRequest;
+import com.school.eportal.dtos.requests.PaystackWebhookRequest;
 import com.school.eportal.dtos.requests.VerifySchoolFeesPaymentRequest;
 import com.school.eportal.dtos.responses.CreateSchoolFeesResponse;
 import com.school.eportal.dtos.responses.GetSchoolFeesTransactionsResponse;
@@ -17,6 +21,7 @@ import com.school.eportal.exceptions.*;
 import com.school.eportal.proxy.paymentGateway.PaymentGatewayClient;
 import com.school.eportal.proxy.paymentGateway.dtos.requests.InitiatePaymentRequest;
 import com.school.eportal.proxy.paymentGateway.dtos.responses.InitiatePaymentResponse;
+import com.school.eportal.proxy.paymentGateway.dtos.webhook.PaystackWebhookData;
 import com.school.eportal.proxy.paymentGateway.dtos.webhook.PaystackWebhookPayload;
 import com.school.eportal.services.interfaces.SchoolFeeService;
 import com.school.eportal.utils.ExcelParser;
@@ -34,10 +39,13 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
+
+import static com.school.eportal.proxy.paymentGateway.PaystackPaymentGatewayImpl.isValidSignature;
 import static com.school.eportal.utils.NairaConverter.koboToNaira;
 import static com.school.eportal.utils.NairaConverter.nairaToKobo;
 import static com.school.eportal.utils.RandomPicker.generateRandomAlphanumeric;
 import static com.school.eportal.utils.Validator.*;
+import static java.lang.Long.parseLong;
 
 @Slf4j
 @Service
@@ -53,6 +61,7 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
     private final DepartmentPathRepo departmentPathRepo;
     private final Classrooms classrooms;
     private final PaymentGatewayClient paymentGatewayClient;
+    private final ObjectMapper objectMapper;
 
     @Override
     public CreateSchoolFeesResponse createSchoolFees(MultipartFile file) {
@@ -249,21 +258,86 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
 
     // For Paystack WebSocket
     @Override
-    public void updateTransaction(PaystackWebhookPayload request) {
-        String reference = request.getData().getReference();
+    public void updateTransaction(PaystackWebhookRequest request) {
 
+        if (!isValidSignature(request.getRawPayload(), request.getSignature())) {
+           throw new InvalidWebhookSignature("Invalid Webhook Signature");
+        }
 
+        PaystackWebhookPayload payload;
+        try {
+            payload = objectMapper.readValue(request.getRawPayload(), PaystackWebhookPayload.class);
+        } catch (JsonProcessingException e) {
+            throw new ParsingException(e.getMessage());
+        }
+
+        String event = payload.getEvent();
+        PaystackWebhookData data = payload.getData();
+
+        FeeTransaction feeTransaction = feeTransactions.findByPaymentReference(data.getReference())
+                .orElseThrow(() -> new FeeTransactionDoesntExistException("Fee Transaction doesnt exist."));
+
+        if(event.equals("charge.success")){
+            feeTransaction.setStatus(TransactionStatus.CONFIRMED);
+            updatedFeeLedgerStatus(feeTransaction);
+
+        } else if (event.equals("charge.failed")) {
+            feeTransaction.setStatus(TransactionStatus.FAILED);
+        }
+
+        feeTransactions.save(feeTransaction);
+
+        //TODO: Remember to save the payload
+
+    }
+
+    private void updatedFeeLedgerStatus(@NonNull FeeTransaction feeTransaction) {
+        FeeLedger feeLedger = feeLedgers.findById(feeTransaction.getFeeLedger())
+                .orElseThrow(() -> new FeeLedgerDoesntExistException("Fee Ledger doesn't exist."));
+
+        long total = getTotalAmountPaid(feeLedger, feeTransaction);
+
+        if (feeLedger.getTotalExpectedAmount() > total && total > 0){
+            feeLedger.setStatus(FeeLedgerStatus.PARTIALLY_PAID);
+        }
+        if (total == feeLedger.getTotalExpectedAmount()) {
+            feeLedger.setStatus(FeeLedgerStatus.FULLY_PAID);
+        }
+        if (total < feeLedger.getTotalExpectedAmount()) {
+            feeLedger.setStatus(FeeLedgerStatus.OVERPAID);
+        }
+        feeTransactions.save(feeTransaction);
+    }
+
+    private long getTotalAmountPaid(@NonNull FeeLedger feeLedger, FeeTransaction feeTransaction) {
+        List<FeeTransaction> transactions = feeTransactions.findByFeeLedger(feeLedger.getId());
+        long totalConfirmed = transactions.stream()
+                .filter(transaction -> transaction.getStatus() == TransactionStatus.CONFIRMED)
+                .mapToLong(FeeTransaction::getAmount)
+                .sum();
+        return feeTransaction.getAmount() + totalConfirmed;
     }
 
 
     @Override
     public VerifySchoolFeesPaymentResponse verifySchoolFees(VerifySchoolFeesPaymentRequest request) {
-        return null;
+        Account student = accounts.findByUsername(request.getStudentID()).orElseThrow(() -> new UserNotFoundException("User Not Found."));
+        if (!student.getRole().equals(Role.STUDENT)) {
+            throw new InvalidRoleException("This School ID doesn't belong to a student");
+        }
+        String startYear = request.getSession().substring(0, 3);
+        long sessionYear = parseLong(startYear);
+
+
+
+
+        return VerifySchoolFeesPaymentResponse.builder()
+                .build();
     }
 
 
     @Override
-    public GetSchoolFeesTransactionsResponse getSchoolFeesTransaction(GetSchoolFeesTransactionsRequest request) {
+    public GetSchoolFeesTransactionsResponse getSchoolFeesDetails(GetSchoolFeesTransactionsRequest request) {
         return null;
     }
 }
