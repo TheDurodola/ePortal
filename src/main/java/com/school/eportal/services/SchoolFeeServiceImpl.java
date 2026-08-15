@@ -9,12 +9,12 @@ import com.school.eportal.data.models.enums.Role;
 import com.school.eportal.data.models.enums.TransactionStatus;
 import com.school.eportal.data.repositories.*;
 import com.school.eportal.dtos.SchoolResponseData;
-import com.school.eportal.dtos.requests.GetSchoolFeesTransactionsRequest;
+import com.school.eportal.dtos.requests.GetSchoolFeesDetailsRequest;
 import com.school.eportal.dtos.requests.PaySchoolFeesRequest;
 import com.school.eportal.dtos.requests.PaystackWebhookRequest;
 import com.school.eportal.dtos.requests.VerifySchoolFeesPaymentRequest;
 import com.school.eportal.dtos.responses.CreateSchoolFeesResponse;
-import com.school.eportal.dtos.responses.GetSchoolFeesTransactionsResponse;
+import com.school.eportal.dtos.responses.GetSchoolFeesDetailsResponse;
 import com.school.eportal.dtos.responses.PaySchoolFeesResponse;
 import com.school.eportal.dtos.responses.VerifySchoolFeesPaymentResponse;
 import com.school.eportal.exceptions.*;
@@ -35,17 +35,19 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
-
 import static com.school.eportal.proxy.paymentGateway.PaystackPaymentGatewayImpl.isValidSignature;
+import static com.school.eportal.utils.BigDecimalUtils.greaterThanOrEqualsTo;
 import static com.school.eportal.utils.NairaConverter.koboToNaira;
 import static com.school.eportal.utils.NairaConverter.nairaToKobo;
+import static com.school.eportal.utils.NameFormatter.toProperCase;
 import static com.school.eportal.utils.RandomPicker.generateRandomAlphanumeric;
 import static com.school.eportal.utils.Validator.*;
-import static java.lang.Long.parseLong;
+import static java.lang.Integer.parseInt;
 
 @Slf4j
 @Service
@@ -118,21 +120,18 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
 
 
     private String createSession(@NonNull String session) {
-        int startYearInInteger = Integer.parseInt(session.substring(0, 3));
+        int startYearInInteger = parseInt(session.substring(0, 3));
         if (sessions.findByStartYear(startYearInInteger).isPresent()) {
             return sessions.findByStartYear(startYearInInteger).get().getId();
         }
 
         Session sessionObj;
         if (isSingleYear(session)) {
-            int sessionInInt = Integer.parseInt(session);
+            int sessionInInt = parseInt(session);
             sessionObj = Session.builder().startYear(sessionInInt).endYear(sessionInInt + 1).isCurrent(false).build();
-        }
-        if (isShortSession(session)) {
+        } else if (isShortSession(session)) {
             sessionObj = Session.builder().startYear(startYearInInteger).endYear(startYearInInteger + 1).isCurrent(false).build();
-        }
-
-        if (isFullSession(session)) {
+        } else if (isFullSession(session)) {
             sessionObj = Session.builder().startYear(startYearInInteger).endYear(startYearInInteger + 1).isCurrent(false).build();
         } else throw new InvalidSessionException("Input Session could not be parsed into Session Object");
 
@@ -182,10 +181,11 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
 
         Department department = getDepartment(student);
 
-        long total = schoolFees.findBySessionIdAndDepartmentAndGrade(session.getId(), department, classroom.getGrade())
-                .orElseThrow(() -> new SchoolFeesException("User Not Found.")).getTotal();
+        SchoolFee schoolFee = schoolFees.findBySessionIdAndDepartmentAndGrade(session.getId(), department, classroom.getGrade())
+                .orElseThrow(() -> new SchoolFeesException("User Not Found."));
 
-        FeeLedger newFeeLedger = generateNewLedger(student, session, total);
+        FeeLedger newFeeLedger = generateNewLedger(student, session, schoolFee.getTotal());
+        newFeeLedger.setSchoolFeesId(schoolFee.getId());
         newFeeLedger.getTransactions().add(reference);
 
         FeeLedger savedLedger = feeLedgers.save(newFeeLedger);
@@ -261,7 +261,7 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
     public void updateTransaction(PaystackWebhookRequest request) {
 
         if (!isValidSignature(request.getRawPayload(), request.getSignature())) {
-           throw new InvalidWebhookSignature("Invalid Webhook Signature");
+            throw new InvalidWebhookSignature("Invalid Webhook Signature");
         }
 
         PaystackWebhookPayload payload;
@@ -277,7 +277,7 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
         FeeTransaction feeTransaction = feeTransactions.findByPaymentReference(data.getReference())
                 .orElseThrow(() -> new FeeTransactionDoesntExistException("Fee Transaction doesnt exist."));
 
-        if(event.equals("charge.success")){
+        if (event.equals("charge.success")) {
             feeTransaction.setStatus(TransactionStatus.CONFIRMED);
             updatedFeeLedgerStatus(feeTransaction);
 
@@ -320,24 +320,83 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
 
 
     @Override
-    public VerifySchoolFeesPaymentResponse verifySchoolFees(VerifySchoolFeesPaymentRequest request) {
+    public VerifySchoolFeesPaymentResponse verifySchoolFees(@NonNull VerifySchoolFeesPaymentRequest request) {
         Account student = accounts.findByUsername(request.getStudentID()).orElseThrow(() -> new UserNotFoundException("User Not Found."));
         if (!student.getRole().equals(Role.STUDENT)) {
             throw new InvalidRoleException("This School ID doesn't belong to a student");
         }
         String startYear = request.getSession().substring(0, 3);
-        long sessionYear = parseLong(startYear);
+        int sessionYear = parseInt(startYear);
 
+        Session session = sessions.findByStartYear(sessionYear)
+                .orElseThrow(() -> new AcademicSessionDoesntExistException("The Academic Session doesn't exist."));
 
+        FeeLedger feeLedger = feeLedgers.findByStudentIdAndAcademicSessionId(student.getId(), session.getId())
+                .orElseThrow(() -> new FeeLedgerDoesntExistException("User Not Found."));
 
+        long totalAmountPaid = getTotalAmountPaid(feeLedger);
+
+        SchoolFee schoolFee = schoolFees.findById(feeLedger.getSchoolFeesId())
+                .orElseThrow(() -> new SchoolFeesException("School Fees doesn't exist."));
 
         return VerifySchoolFeesPaymentResponse.builder()
+                .studentFirstName(toProperCase(student.getFirstName()))
+                .studentLastName(toProperCase(student.getLastName()))
+                .qualifiedForFirstTerm(qualifiedForFirstTerm(totalAmountPaid, schoolFee))
+                .qualifiedForSecondTerm(qualifiedForSecondTerm(totalAmountPaid, schoolFee))
+                .qualifiedForThirdTerm(qualifiedForThirdTerm(totalAmountPaid, schoolFee))
                 .build();
+
+    }
+
+    private boolean qualifiedForFirstTerm(long totalAmountPaid, SchoolFee schoolFee) {
+        BigDecimal percentage = schoolFee.getFirstTermMinPercentage();
+        long totalExpected = schoolFee.getTotal();
+
+        BigDecimal percentageInFigures = percentage.divide(BigDecimal.valueOf(100), 3, RoundingMode.HALF_UP);
+
+        BigDecimal bigDecimal = koboToNaira(totalExpected);
+        BigDecimal cutOff = bigDecimal.multiply(percentageInFigures);
+
+        return greaterThanOrEqualsTo(koboToNaira(totalAmountPaid), cutOff);
+    }
+
+
+    private boolean qualifiedForSecondTerm(long totalAmountPaid, @NonNull SchoolFee schoolFee) {
+        BigDecimal percentage = schoolFee.getSecondTermMinPercentage();
+        long totalExpected = schoolFee.getTotal();
+
+        BigDecimal percentageInFigures = percentage.divide(BigDecimal.valueOf(100), 3, RoundingMode.HALF_UP);
+
+        BigDecimal bigDecimal = koboToNaira(totalExpected);
+        BigDecimal cutOff = bigDecimal.multiply(percentageInFigures);
+
+        return greaterThanOrEqualsTo(koboToNaira(totalAmountPaid), cutOff);
+    }
+
+
+    private boolean qualifiedForThirdTerm(long totalAmountPaid, @NonNull SchoolFee schoolFee) {
+        BigDecimal percentage = schoolFee.getThirdTermMinPercentage();
+        long totalExpected = schoolFee.getTotal();
+
+        BigDecimal percentageInFigures = percentage.divide(BigDecimal.valueOf(100), 3, RoundingMode.HALF_UP);
+
+        BigDecimal bigDecimal = koboToNaira(totalExpected);
+        BigDecimal cutOff = bigDecimal.multiply(percentageInFigures);
+
+        return greaterThanOrEqualsTo(koboToNaira(totalAmountPaid), cutOff);
+    }
+
+    private long getTotalAmountPaid(@NonNull FeeLedger feeLedger) {
+        return feeTransactions.findByFeeLedger(feeLedger.getId()).stream()
+                .filter(feeTransaction -> feeTransaction.getStatus() == TransactionStatus.CONFIRMED)
+                .mapToLong(FeeTransaction::getAmount)
+                .sum();
     }
 
 
     @Override
-    public GetSchoolFeesTransactionsResponse getSchoolFeesDetails(GetSchoolFeesTransactionsRequest request) {
+    public GetSchoolFeesDetailsResponse getSchoolFeesDetails(GetSchoolFeesDetailsRequest request) {
         return null;
     }
 }

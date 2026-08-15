@@ -7,5 +7,5 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class GetSchoolFeesTransactionsResponse {
+public class GetSchoolFeesDetailsResponse {
 }

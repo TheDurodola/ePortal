@@ -1,6 +1,5 @@
 package com.school.eportal.data.models;
 
-import com.school.eportal.data.models.enums.Department;
 import com.school.eportal.data.models.enums.Division;
 import com.school.eportal.data.models.enums.Grade;
 import jakarta.validation.constraints.NotNull;

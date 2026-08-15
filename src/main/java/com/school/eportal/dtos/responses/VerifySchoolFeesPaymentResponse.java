@@ -1,6 +1,8 @@
 package com.school.eportal.dtos.responses;
 
-import lombok.*;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.Setter;
 
 @Setter
 @Getter

@@ -272,7 +272,7 @@ public class ExcelParser {
             case NUMERIC -> BigDecimal.valueOf(cell.getNumericCellValue());
             case STRING -> {
                 String raw = cell.getStringCellValue().trim();
-                if (raw.isEmpty()) throw new InvalidCellValueException(identifyCell(cell)  +" cell is null;");;
+                if (raw.isEmpty()) throw new InvalidCellValueException(identifyCell(cell)  +" cell is null;");
                 try {
                     yield new BigDecimal(raw);
                 } catch (NumberFormatException e) {

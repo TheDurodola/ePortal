@@ -3,7 +3,6 @@ package com.school.eportal.dtos.responses;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
-import org.jspecify.annotations.Nullable;
 
 import java.time.LocalDateTime;
 import java.util.Map;

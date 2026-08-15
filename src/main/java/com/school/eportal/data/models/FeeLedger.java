@@ -1,14 +1,11 @@
 package com.school.eportal.data.models;
 
 import com.school.eportal.data.models.enums.FeeLedgerStatus;
-import com.school.eportal.data.models.enums.TransactionStatus;
 import lombok.*;
-import org.jspecify.annotations.NonNull;
 import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,7 +23,7 @@ public class FeeLedger {
     private String id;
 
     private String studentId;
-    private String verificationCode;
+    private String schoolFeesId;
     private String academicSessionId;
     private long totalExpectedAmount;
     private FeeLedgerStatus status = FeeLedgerStatus.UNPAID;

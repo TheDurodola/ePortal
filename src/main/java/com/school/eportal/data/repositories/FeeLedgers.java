@@ -6,8 +6,10 @@ import org.springframework.data.mongodb.repository.MongoRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface FeeLedgers extends MongoRepository<FeeLedger, String> {
    List<FeeLedger> findByStudentIdAndStatusOrStatus(String studentId, FeeLedgerStatus status, FeeLedgerStatus status1);
+   Optional<FeeLedger> findByStudentIdAndAcademicSessionId(String studentId, String academicSessionId);
 }

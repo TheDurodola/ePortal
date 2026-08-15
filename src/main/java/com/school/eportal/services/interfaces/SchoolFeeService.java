@@ -1,11 +1,11 @@
 package com.school.eportal.services.interfaces;
 
-import com.school.eportal.dtos.requests.GetSchoolFeesTransactionsRequest;
+import com.school.eportal.dtos.requests.GetSchoolFeesDetailsRequest;
 import com.school.eportal.dtos.requests.PaySchoolFeesRequest;
 import com.school.eportal.dtos.requests.PaystackWebhookRequest;
 import com.school.eportal.dtos.requests.VerifySchoolFeesPaymentRequest;
 import com.school.eportal.dtos.responses.CreateSchoolFeesResponse;
-import com.school.eportal.dtos.responses.GetSchoolFeesTransactionsResponse;
+import com.school.eportal.dtos.responses.GetSchoolFeesDetailsResponse;
 import com.school.eportal.dtos.responses.PaySchoolFeesResponse;
 import com.school.eportal.dtos.responses.VerifySchoolFeesPaymentResponse;
 import org.springframework.security.core.Authentication;
@@ -20,5 +20,5 @@ public interface SchoolFeeService {
 
     VerifySchoolFeesPaymentResponse verifySchoolFees(VerifySchoolFeesPaymentRequest request);
 
-    GetSchoolFeesTransactionsResponse getSchoolFeesDetails(GetSchoolFeesTransactionsRequest request);
+    GetSchoolFeesDetailsResponse getSchoolFeesDetails(GetSchoolFeesDetailsRequest request);
 }

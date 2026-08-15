@@ -7,5 +7,6 @@ import lombok.*;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class GetSchoolFeesTransactionsRequest {
+public class GetSchoolFeesDetailsRequest {
+    private String userID;
 }
