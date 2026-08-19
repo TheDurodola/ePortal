@@ -20,5 +20,7 @@ public interface SchoolFeeService {
 
     VerifySchoolFeesPaymentResponse verifySchoolFees(VerifySchoolFeesPaymentRequest request);
 
-    GetSchoolFeesDetailsResponse getSchoolFeesDetails(GetSchoolFeesDetailsRequest request);
+
+
+    GetSchoolFeesDetailsResponse getSchoolFeesDetails(Authentication authentication);
 }

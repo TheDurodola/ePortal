@@ -24,16 +24,4 @@ public class DepartmentPath {
     @Builder.Default
     private List<String> students = new ArrayList<>();
 
-    public void addStudent(Account account) {
-        if (students == null) {
-            students = new ArrayList<>();
-        }
-        students.add(account.getId());
-    }
-
-    public void removeStudent(Account account) {
-        if (students != null) {
-            students.remove(account.getId());
-        }
-    }
 }

@@ -471,12 +471,21 @@ public class AccountServiceImpl implements AccountService {
                 DepartmentPath departmentPath = departmentPathRepo.findFirstByDepartment(student.getDepartment())
                         .orElseThrow(() -> new DepartmentPathException("Critical: Department Path " + student.getDepartment() + " not found"));
 
-                departmentPath.addStudent(savedStudent);
+                addStudentToDepartmentPath(departmentPath, savedStudent);
                 departmentPathRepo.save(departmentPath);
             }
             processList(student, response, account, classroom);
         });
         return response;
+    }
+
+    private void addStudentToDepartmentPath(DepartmentPath departmentPath, Account account) {
+        List<String> students = departmentPath.getStudents();
+        if (students == null) {
+            students = new ArrayList<>();
+        }
+        students.add(account.getId());
+        departmentPath.setStudents(students);
     }
 
     private static void processList(@NonNull StudentExcelDTO student, @NonNull List<StudentExcelDTOResponseBody> response, @NonNull Account account, @NonNull Classroom classroom) {
