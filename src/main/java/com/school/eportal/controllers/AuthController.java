@@ -2,7 +2,7 @@ package com.school.eportal.controllers;
 
 import com.school.eportal.dtos.requests.ParentRegistrationRequest;
 import com.school.eportal.dtos.responses.ParentRegistrationResponse;
-import com.school.eportal.services.interfaces.AccountService;
+import com.school.eportal.services.interfaces.AuthService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,12 +19,12 @@ import org.springframework.web.bind.annotation.RestController;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AccountService accountService;
+    private final AuthService authService;
 
     @PostMapping(value = "/registration")
     public ResponseEntity<ParentRegistrationResponse> parentRegistration(@Valid @RequestBody ParentRegistrationRequest request) {
         log.info("Parental sign up endpoint hit");
-        ParentRegistrationResponse body = accountService.parentRegistration(request);
+        ParentRegistrationResponse body = authService.parentRegistration(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(body);
     }
 

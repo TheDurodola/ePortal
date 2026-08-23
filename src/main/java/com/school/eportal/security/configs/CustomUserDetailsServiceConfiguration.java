@@ -3,7 +3,7 @@ package com.school.eportal.security.configs;
 
 import com.school.eportal.exceptions.AccountNotFoundException;
 import com.school.eportal.security.dtos.responses.AccountResponse;
-import com.school.eportal.services.interfaces.AccountService;
+import com.school.eportal.services.interfaces.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.context.annotation.Configuration;
@@ -20,14 +20,14 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CustomUserDetailsServiceConfiguration implements UserDetailsService {
 
-    private final AccountService accountService;
+    private final AuthService authService;
 
     @Override
     public UserDetails loadUserByUsername(@NonNull String username) {
 
         AccountResponse response = null;
         try {
-            response = accountService.getUserAccountBy(username);
+            response = authService.getUserAccountBy(username);
         } catch (AccountNotFoundException e) {
             throw new BadCredentialsException(e.getMessage());
         }

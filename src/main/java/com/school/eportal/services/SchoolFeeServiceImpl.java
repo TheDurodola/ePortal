@@ -107,38 +107,6 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
                 .build();
     }
 
-    private @NonNull String getSession(String sessionId) {
-        Session session = sessions.findById(sessionId).orElse(null);
-        assert session != null;
-        return session.getStartYear() + "/" + session.getEndYear();
-    }
-
-    private BigDecimal getTotal(BigDecimal tuition) {
-        return tuition;
-    }
-
-
-    private String createSession(@NonNull String session) {
-        int startYearInInteger = parseInt(session.substring(0, 3));
-        if (sessions.findByStartYear(startYearInInteger).isPresent()) {
-            return sessions.findByStartYear(startYearInInteger).get().getId();
-        }
-
-        Session sessionObj;
-        if (isSingleYear(session)) {
-            int sessionInInt = parseInt(session);
-            sessionObj = Session.builder().startYear(sessionInInt).endYear(sessionInInt + 1).isCurrent(false).build();
-        } else if (isShortSession(session)) {
-            sessionObj = Session.builder().startYear(startYearInInteger).endYear(startYearInInteger + 1).isCurrent(false).build();
-        } else if (isFullSession(session)) {
-            sessionObj = Session.builder().startYear(startYearInInteger).endYear(startYearInInteger + 1).isCurrent(false).build();
-        } else throw new InvalidSessionException("Input Session could not be parsed into Session Object");
-
-        Session savedSession = sessions.save(sessionObj);
-
-        return savedSession.getId();
-    }
-
     @Override
     @Transactional
     public PaySchoolFeesResponse paySchoolFees(@NonNull PaySchoolFeesRequest request, @NonNull Authentication authentication) {
@@ -201,63 +169,8 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
                 .build();
     }
 
-    private void addNewTransaction(@NonNull PaySchoolFeesRequest request, String reference, @NonNull Account parent, @NonNull FeeLedger newFeeLedger) {
-        FeeTransaction firstTransaction = FeeTransaction.builder()
-                .amount(nairaToKobo(request.getAmount()))
-                .attemptedAt(Instant.now())
-                .status(TransactionStatus.PENDING)
-                .paymentReference(reference)
-                .feeLedger(newFeeLedger.getId())
-                .madeBy(parent.getFirstName() + " " + parent.getLastName())
-                .build();
-
-        feeTransactions.save(firstTransaction);
-    }
-
-    private void IfRequestAmountExceedsSchoolFeesTotalAmount(@NonNull PaySchoolFeesRequest request, @NonNull FeeLedger feeLedger) {
-        if (feeLedger.getTotalExpectedAmount() < (nairaToKobo(request.getAmount()) + getAmountPaid(feeLedger.getId())) ) {
-            throw new InvalidAmountException("Exceeded total amount");
-        }
-    }
-
-
-    private long getAmountPaid(String id) {
-        List<FeeTransaction> transactions = feeTransactions.findByFeeLedger(id);
-        return transactions.stream()
-                .filter(t -> t.getStatus() == TransactionStatus.CONFIRMED)
-                .mapToLong(FeeTransaction::getAmount)
-                .sum();
-    }
-
-
-
-    private static FeeLedger generateNewLedger(@NonNull Account student, @NonNull Session session, long total) {
-        return FeeLedger.builder().studentId(student.getId())
-                .academicSessionId(session.getId())
-                .totalExpectedAmount(total)
-                .status(FeeLedgerStatus.UNPAID)
-                .build();
-    }
-
-    private Department getDepartment(@NonNull Account student) {
-        Department department;
-        try {
-            department = departmentPathRepo.findByStudentsContaining(student.getId())
-                    .orElseThrow(() -> new UserNotFoundException("User Not Found.")).getDepartment();
-        } catch (UserNotFoundException e) {
-            department = Department.NONE;
-        }
-        return department;
-    }
-
-    private static @NonNull String generateSchoolFeesReference(@NonNull Session session) {
-        return session.getStartYear() + generateRandomAlphanumeric() + session.getEndYear();
-    }
-
-
-    // For Paystack WebSocket
     @Override
-    public void updateTransaction(PaystackWebhookRequest request) {
+    public void updateTransaction(@NonNull PaystackWebhookRequest request) {
 
         if (!isValidSignature(request.getRawPayload(), request.getSignature())) {
             throw new InvalidWebhookSignature("Invalid Webhook Signature");
@@ -290,34 +203,6 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
 
     }
 
-    private void updatedFeeLedgerStatus(@NonNull FeeTransaction feeTransaction) {
-        FeeLedger feeLedger = feeLedgers.findById(feeTransaction.getFeeLedger())
-                .orElseThrow(() -> new FeeLedgerDoesntExistException("Fee Ledger doesn't exist."));
-
-        long total = getTotalAmountPaid(feeLedger, feeTransaction);
-
-        if (feeLedger.getTotalExpectedAmount() > total && total > 0){
-            feeLedger.setStatus(FeeLedgerStatus.PARTIALLY_PAID);
-        }
-        if (total == feeLedger.getTotalExpectedAmount()) {
-            feeLedger.setStatus(FeeLedgerStatus.FULLY_PAID);
-        }
-        if (total < feeLedger.getTotalExpectedAmount()) {
-            feeLedger.setStatus(FeeLedgerStatus.OVERPAID);
-        }
-        feeTransactions.save(feeTransaction);
-    }
-
-    private long getTotalAmountPaid(@NonNull FeeLedger feeLedger, FeeTransaction feeTransaction) {
-        List<FeeTransaction> transactions = feeTransactions.findByFeeLedger(feeLedger.getId());
-        long totalConfirmed = transactions.stream()
-                .filter(transaction -> transaction.getStatus() == TransactionStatus.CONFIRMED)
-                .mapToLong(FeeTransaction::getAmount)
-                .sum();
-        return feeTransaction.getAmount() + totalConfirmed;
-    }
-
-
     @Override
     public VerifySchoolFeesPaymentResponse verifySchoolFees(@NonNull VerifySchoolFeesPaymentRequest request) {
         Account student = accounts.findByUsername(request.getStudentID()).orElseThrow(() -> new UserNotFoundException("User Not Found."));
@@ -347,52 +232,6 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
                 .build();
 
     }
-
-    private boolean qualifiedForFirstTerm(long totalAmountPaid, SchoolFee schoolFee) {
-        BigDecimal percentage = schoolFee.getFirstTermMinPercentage();
-        long totalExpected = schoolFee.getTotal();
-
-        BigDecimal percentageInFigures = percentage.divide(BigDecimal.valueOf(100), 3, RoundingMode.HALF_UP);
-
-        BigDecimal bigDecimal = koboToNaira(totalExpected);
-        BigDecimal cutOff = bigDecimal.multiply(percentageInFigures);
-
-        return greaterThanOrEqualsTo(koboToNaira(totalAmountPaid), cutOff);
-    }
-
-
-    private boolean qualifiedForSecondTerm(long totalAmountPaid, @NonNull SchoolFee schoolFee) {
-        BigDecimal percentage = schoolFee.getSecondTermMinPercentage();
-        long totalExpected = schoolFee.getTotal();
-
-        BigDecimal percentageInFigures = percentage.divide(BigDecimal.valueOf(100), 3, RoundingMode.HALF_UP);
-
-        BigDecimal bigDecimal = koboToNaira(totalExpected);
-        BigDecimal cutOff = bigDecimal.multiply(percentageInFigures);
-
-        return greaterThanOrEqualsTo(koboToNaira(totalAmountPaid), cutOff);
-    }
-
-
-    private boolean qualifiedForThirdTerm(long totalAmountPaid, @NonNull SchoolFee schoolFee) {
-        BigDecimal percentage = schoolFee.getThirdTermMinPercentage();
-        long totalExpected = schoolFee.getTotal();
-
-        BigDecimal percentageInFigures = percentage.divide(BigDecimal.valueOf(100), 3, RoundingMode.HALF_UP);
-
-        BigDecimal bigDecimal = koboToNaira(totalExpected);
-        BigDecimal cutOff = bigDecimal.multiply(percentageInFigures);
-
-        return greaterThanOrEqualsTo(koboToNaira(totalAmountPaid), cutOff);
-    }
-
-    private long getTotalAmountPaid(@NonNull FeeLedger feeLedger) {
-        return feeTransactions.findByFeeLedger(feeLedger.getId()).stream()
-                .filter(feeTransaction -> feeTransaction.getStatus() == TransactionStatus.CONFIRMED)
-                .mapToLong(FeeTransaction::getAmount)
-                .sum();
-    }
-
 
     @Override
     public GetSchoolFeesDetailsResponse getSchoolFeesDetails(@NonNull Authentication authentication) {
@@ -425,7 +264,159 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
                 .build();
     }
 
-    private List<SchoolFeesDetailPayload> getRecordsOfStudentsWithoutOutstandings(List<SchoolFeesDetailPayload> outstandingSchoolFeesPayload, List<String> childIDs) {
+
+    private @NonNull String getSession(String sessionId) {
+        Session session = sessions.findById(sessionId).orElse(null);
+        assert session != null;
+        return session.getStartYear() + "/" + session.getEndYear();
+    }
+
+    private BigDecimal getTotal(BigDecimal tuition) {
+        return tuition;
+    }
+
+    private String createSession(@NonNull String session) {
+        int startYearInInteger = parseInt(session.substring(0, 3));
+        if (sessions.findByStartYear(startYearInInteger).isPresent()) {
+            return sessions.findByStartYear(startYearInInteger).get().getId();
+        }
+
+        Session sessionObj;
+        if (isSingleYear(session)) {
+            int sessionInInt = parseInt(session);
+            sessionObj = Session.builder().startYear(sessionInInt).endYear(sessionInInt + 1).isCurrent(false).build();
+        } else if (isShortSession(session)) {
+            sessionObj = Session.builder().startYear(startYearInInteger).endYear(startYearInInteger + 1).isCurrent(false).build();
+        } else if (isFullSession(session)) {
+            sessionObj = Session.builder().startYear(startYearInInteger).endYear(startYearInInteger + 1).isCurrent(false).build();
+        } else throw new InvalidSessionException("Input Session could not be parsed into Session Object");
+
+        Session savedSession = sessions.save(sessionObj);
+
+        return savedSession.getId();
+    }
+
+    private void addNewTransaction(@NonNull PaySchoolFeesRequest request, String reference, @NonNull Account parent, @NonNull FeeLedger newFeeLedger) {
+        FeeTransaction firstTransaction = FeeTransaction.builder()
+                .amount(nairaToKobo(request.getAmount()))
+                .attemptedAt(Instant.now())
+                .status(TransactionStatus.PENDING)
+                .paymentReference(reference)
+                .feeLedger(newFeeLedger.getId())
+                .madeBy(parent.getFirstName() + " " + parent.getLastName())
+                .build();
+
+        feeTransactions.save(firstTransaction);
+    }
+
+    private void IfRequestAmountExceedsSchoolFeesTotalAmount(@NonNull PaySchoolFeesRequest request, @NonNull FeeLedger feeLedger) {
+        if (feeLedger.getTotalExpectedAmount() < (nairaToKobo(request.getAmount()) + getAmountPaid(feeLedger.getId())) ) {
+            throw new InvalidAmountException("Exceeded total amount");
+        }
+    }
+
+    private long getAmountPaid(String id) {
+        List<FeeTransaction> transactions = feeTransactions.findByFeeLedger(id);
+        return transactions.stream()
+                .filter(t -> t.getStatus() == TransactionStatus.CONFIRMED)
+                .mapToLong(FeeTransaction::getAmount)
+                .sum();
+    }
+
+    private static FeeLedger generateNewLedger(@NonNull Account student, @NonNull Session session, long total) {
+        return FeeLedger.builder().studentId(student.getId())
+                .academicSessionId(session.getId())
+                .totalExpectedAmount(total)
+                .status(FeeLedgerStatus.UNPAID)
+                .build();
+    }
+
+    private Department getDepartment(@NonNull Account student) {
+        Department department;
+        try {
+            department = departmentPathRepo.findByStudentsContaining(student.getId())
+                    .orElseThrow(() -> new UserNotFoundException("User Not Found.")).getDepartment();
+        } catch (UserNotFoundException e) {
+            department = Department.NONE;
+        }
+        return department;
+    }
+
+    private static @NonNull String generateSchoolFeesReference(@NonNull Session session) {
+        return session.getStartYear() + generateRandomAlphanumeric() + session.getEndYear();
+    }
+
+    private void updatedFeeLedgerStatus(@NonNull FeeTransaction feeTransaction) {
+        FeeLedger feeLedger = feeLedgers.findById(feeTransaction.getFeeLedger())
+                .orElseThrow(() -> new FeeLedgerDoesntExistException("Fee Ledger doesn't exist."));
+
+        long total = getTotalAmountPaid(feeLedger, feeTransaction);
+
+        if (feeLedger.getTotalExpectedAmount() > total && total > 0){
+            feeLedger.setStatus(FeeLedgerStatus.PARTIALLY_PAID);
+        }
+        if (total == feeLedger.getTotalExpectedAmount()) {
+            feeLedger.setStatus(FeeLedgerStatus.FULLY_PAID);
+        }
+        if (total < feeLedger.getTotalExpectedAmount()) {
+            feeLedger.setStatus(FeeLedgerStatus.OVERPAID);
+        }
+        feeTransactions.save(feeTransaction);
+    }
+
+    private long getTotalAmountPaid(@NonNull FeeLedger feeLedger, @NonNull FeeTransaction feeTransaction) {
+        List<FeeTransaction> transactions = feeTransactions.findByFeeLedger(feeLedger.getId());
+        long totalConfirmed = transactions.stream()
+                .filter(transaction -> transaction.getStatus() == TransactionStatus.CONFIRMED)
+                .mapToLong(FeeTransaction::getAmount)
+                .sum();
+        return feeTransaction.getAmount() + totalConfirmed;
+    }
+
+    private boolean qualifiedForFirstTerm(long totalAmountPaid, @NonNull SchoolFee schoolFee) {
+        BigDecimal percentage = schoolFee.getFirstTermMinPercentage();
+        long totalExpected = schoolFee.getTotal();
+
+        BigDecimal percentageInFigures = percentage.divide(BigDecimal.valueOf(100), 3, RoundingMode.HALF_UP);
+
+        BigDecimal bigDecimal = koboToNaira(totalExpected);
+        BigDecimal cutOff = bigDecimal.multiply(percentageInFigures);
+
+        return greaterThanOrEqualsTo(koboToNaira(totalAmountPaid), cutOff);
+    }
+
+    private boolean qualifiedForSecondTerm(long totalAmountPaid, @NonNull SchoolFee schoolFee) {
+        BigDecimal percentage = schoolFee.getSecondTermMinPercentage();
+        long totalExpected = schoolFee.getTotal();
+
+        BigDecimal percentageInFigures = percentage.divide(BigDecimal.valueOf(100), 3, RoundingMode.HALF_UP);
+
+        BigDecimal bigDecimal = koboToNaira(totalExpected);
+        BigDecimal cutOff = bigDecimal.multiply(percentageInFigures);
+
+        return greaterThanOrEqualsTo(koboToNaira(totalAmountPaid), cutOff);
+    }
+
+    private boolean qualifiedForThirdTerm(long totalAmountPaid, @NonNull SchoolFee schoolFee) {
+        BigDecimal percentage = schoolFee.getThirdTermMinPercentage();
+        long totalExpected = schoolFee.getTotal();
+
+        BigDecimal percentageInFigures = percentage.divide(BigDecimal.valueOf(100), 3, RoundingMode.HALF_UP);
+
+        BigDecimal bigDecimal = koboToNaira(totalExpected);
+        BigDecimal cutOff = bigDecimal.multiply(percentageInFigures);
+
+        return greaterThanOrEqualsTo(koboToNaira(totalAmountPaid), cutOff);
+    }
+
+    private long getTotalAmountPaid(@NonNull FeeLedger feeLedger) {
+        return feeTransactions.findByFeeLedger(feeLedger.getId()).stream()
+                .filter(feeTransaction -> feeTransaction.getStatus() == TransactionStatus.CONFIRMED)
+                .mapToLong(FeeTransaction::getAmount)
+                .sum();
+    }
+
+    private List<SchoolFeesDetailPayload> getRecordsOfStudentsWithoutOutstandings(@NonNull List<SchoolFeesDetailPayload> outstandingSchoolFeesPayload, @NonNull List<String> childIDs) {
         Set<String> studentIdsWithOutstanding = outstandingSchoolFeesPayload.stream()
                 .map(SchoolFeesDetailPayload::getStudentID)
                 .collect(Collectors.toSet());
@@ -471,7 +462,7 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
         return session.getStartYear() + "/" + session.getEndYear();
     }
 
-    private Department getStudentDepartment(Account child) {
+    private Department getStudentDepartment(@NonNull Account child) {
         Optional<DepartmentPath> byStudentsContaining = departmentPathRepo.findByStudentsContaining(child.getId());
         if (byStudentsContaining.isEmpty()) {
             return Department.NONE;
@@ -479,7 +470,6 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
 
         return byStudentsContaining.get().getDepartment();
     }
-
     //    private List<SchoolFeesDetailPayload> getStudentsWithoutOutstandingSchoolDetails(
 //            List<String> childIdsWithNoOutstanding) {
 //

@@ -17,6 +17,16 @@ import java.util.stream.Collectors;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(value = AcademicSessionDoesntExistException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull AcademicSessionDoesntExistException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.NOT_FOUND.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exception);
+    }
+
     @ExceptionHandler(value = AccountNotFoundException.class)
     public ResponseEntity<ExceptionResponse> handleException(@NonNull AccountNotFoundException e) {
         ExceptionResponse exception = new ExceptionResponse(HttpStatus.NOT_FOUND.value(),
@@ -35,6 +45,24 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
     }
 
+    @ExceptionHandler(value = DoesntBelongToaDepartmentException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull DoesntBelongToaDepartmentException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = EmptyCellException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull EmptyCellException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
     @ExceptionHandler(value = ExcelParserException.class)
     public ResponseEntity<ExceptionResponse> handleException(@NonNull ExcelParserException e) {
         ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
@@ -42,6 +70,24 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now()
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = FeeLedgerDoesntExistException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull FeeLedgerDoesntExistException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.NOT_FOUND.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exception);
+    }
+
+    @ExceptionHandler(value = FeeTransactionDoesntExistException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull FeeTransactionDoesntExistException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.NOT_FOUND.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exception);
     }
 
     @ExceptionHandler(value = InvalidAccountStatusException.class)
@@ -53,8 +99,26 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
     }
 
+    @ExceptionHandler(value = InvalidAmountException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull InvalidAmountException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
     @ExceptionHandler(value = InvalidBulkRegistration.class)
     public ResponseEntity<ExceptionResponse> handleException(@NonNull InvalidBulkRegistration e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = InvalidCellValueException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull InvalidCellValueException e) {
         ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
                 e.getMessage(),
                 LocalDateTime.now()
@@ -89,8 +153,53 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
     }
 
+    @ExceptionHandler(value = InvalidPercentageException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull InvalidPercentageException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
     @ExceptionHandler(value = InvalidPreRegistrationException.class)
     public ResponseEntity<ExceptionResponse> handleException(@NonNull InvalidPreRegistrationException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = InvalidRoleException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull InvalidRoleException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = InvalidSchoolSessionException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull InvalidSchoolSessionException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = InvalidSessionException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull InvalidSessionException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = InvalidUserException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull InvalidUserException e) {
         ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
                 e.getMessage(),
                 LocalDateTime.now()
@@ -105,6 +214,69 @@ public class GlobalExceptionHandler {
                 LocalDateTime.now()
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = InvalidWebhookSignature.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull InvalidWebhookSignature e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = NoSuchClassroomException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull NoSuchClassroomException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.NOT_FOUND.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(exception);
+    }
+
+    @ExceptionHandler(value = OutstandingSchoolFeesException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull OutstandingSchoolFeesException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = ParentChildRelationshipException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull ParentChildRelationshipException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = ParsingException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull ParsingException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = SchoolFeesException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull SchoolFeesException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.BAD_REQUEST.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
+    }
+
+    @ExceptionHandler(value = TransactionAlreadyExistsException.class)
+    public ResponseEntity<ExceptionResponse> handleException(@NonNull TransactionAlreadyExistsException e) {
+        ExceptionResponse exception = new ExceptionResponse(HttpStatus.CONFLICT.value(),
+                e.getMessage(),
+                LocalDateTime.now()
+        );
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(exception);
     }
 
     @ExceptionHandler(value = UserNotFoundException.class)
@@ -124,7 +296,6 @@ public class GlobalExceptionHandler {
         );
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(exception);
     }
-
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ProblemDetail handleValidation(@NonNull MethodArgumentNotValidException ex) {

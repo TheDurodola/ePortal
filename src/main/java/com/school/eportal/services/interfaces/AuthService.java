@@ -11,12 +11,12 @@ import org.jspecify.annotations.NonNull;
 import org.springframework.web.multipart.MultipartFile;
 
 
-public interface AccountService {
+public interface AuthService {
     AccountResponse getUserAccountBy(String username) throws AccountNotFoundException;
     AccountResponse getUserAccountById(String id) throws AccountNotFoundException;
     RegisterBulkUsersResponse bulkRegistration(RegisterBulkUsersRequest request);
     AccountActivationResponse accountActivation(AccountActivationRequest request);
     PreRegistrationResponse preRegistration(@NonNull MultipartFile request);
     ParentRegistrationResponse parentRegistration(ParentRegistrationRequest request);
-    GetProfileResponse getProfile(GetProfileRequest request);
+
 }

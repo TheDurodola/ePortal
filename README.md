@@ -128,11 +128,16 @@ SERVER_PORT=8080
   - `POST /api/v1/preregistration/excel` requires `PRINCIPAL` or `ADMIN` authority.
   - Profile retrieval requires an account with an `ACTIVE` status.
 
+  
+
 ---
 
-##  API Documentation
+##  API Documentation & Testing
+To test these endpoints directly, view the interactive [Postman Documentation]((https://durodola-abolaji-s-team.postman.co/workspace/Team-Workspace~38bda554-bdc0-443b-8f9a-9a7bd7b74acd/collection/47831221-8d493821-a1f9-4782-b2b4-bda0fc48cb9b?action=share&creator=47831221)). It includes complete request schemas, headers, and pre-configured environment examples.
 
 ### 1. User Sign-In (Authentication)
+---
+
 
 Authenticates users and returns a signed JWT token upon successful credential verification.
 
