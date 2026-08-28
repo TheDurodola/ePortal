@@ -19,6 +19,11 @@ A robust, extensible, and modular backend base project built with **Java 21**, *
   - [3. Pre-Registration via Excel Upload](#3-pre-registration-via-excel-upload)
   - [4. Account Activation](#4-account-activation)
   - [5. Get User Profile](#5-get-user-profile)
+  - [6. Upload School Fees Configuration Spreadsheet](#6-upload-school-fees-configuration-spreadsheet)
+  - [7. Initiate School Fees Payment](#7-initiate-school-fees-payment)
+  - [8. Paystack Payment Webhook](#8-paystack-payment-webhook)
+  - [9. Verify School Fees Payment Eligibility](#9-verify-school-fees-payment-eligibility)
+  - [10. Get School Fees Details & Breakdown](#10-get-school-fees-details--breakdown)
 - [Global Exception & Error Responses](#global-exception--error-responses)
 - [Customization Guide for Schools](#customization-guide-for-schools)
 
@@ -128,11 +133,16 @@ SERVER_PORT=8080
   - `POST /api/v1/preregistration/excel` requires `PRINCIPAL` or `ADMIN` authority.
   - Profile retrieval requires an account with an `ACTIVE` status.
 
+  
+
 ---
 
-##  API Documentation
+##  API Documentation & Testing
+To test these endpoints directly, view the interactive [Postman Documentation]((https://durodola-abolaji-s-team.postman.co/workspace/Team-Workspace~38bda554-bdc0-443b-8f9a-9a7bd7b74acd/collection/47831221-8d493821-a1f9-4782-b2b4-bda0fc48cb9b?action=share&creator=47831221)). It includes complete request schemas, headers, and pre-configured environment examples.
 
 ### 1. User Sign-In (Authentication)
+---
+
 
 Authenticates users and returns a signed JWT token upon successful credential verification.
 
@@ -222,9 +232,10 @@ Registers a parent user account and automatically links the parent to their chil
 - **`404 Not Found`** (Child record not found or date of birth mismatch):
   ```json
   {
+    "type": "about:blank",
+    "title": "Not Found",
     "status": 404,
-    "message": "Child account with specified School ID and Date of Birth does not exist",
-    "timestamp": "2026-08-05T21:20:00"
+    "detail": "Child account with specified School ID and Date of Birth does not exist"
   }
   ```
 
@@ -273,9 +284,10 @@ Enables Administrators or Principals to upload structured Excel spreadsheets (`.
 - **`400 Bad Request`** (Invalid file format, empty cells, or bad data structure):
   ```json
   {
+    "type": "about:blank",
+    "title": "Bad Request",
     "status": 400,
-    "message": "Invalid Excel file format or unparseable columns at row 5",
-    "timestamp": "2026-08-05T21:20:00"
+    "detail": "Invalid Excel file format or unparseable columns at row 5"
   }
   ```
 - **`401 Unauthorized` / `403 Forbidden`** (Missing token or insufficient role privileges):
@@ -313,20 +325,22 @@ Activates a pre-registered student or teacher account by confirming their pre-as
 
 #### Error Responses
 
-- **`400 Bad Request`** (Account already active or invalid Date of Birth):
+- **`400 Bad Request`** (Account already active, inactive, or invalid Date of Birth):
   ```json
   {
+    "type": "about:blank",
+    "title": "Bad Request",
     "status": 400,
-    "message": "Account status is already ACTIVE or Date of Birth does not match pre-registered records",
-    "timestamp": "2026-08-05T21:20:00"
+    "detail": "Account status is already ACTIVE or Date of Birth does not match pre-registered records"
   }
   ```
 - **`404 Not Found`** (School ID / Username not found):
   ```json
   {
+    "type": "about:blank",
+    "title": "Not Found",
     "status": 404,
-    "message": "Account not found for username: STU/2026/012",
-    "timestamp": "2026-08-05T21:20:00"
+    "detail": "Account not found for username: STU/2026/012"
   }
   ```
 
@@ -378,9 +392,246 @@ Fetches profile information for the logged-in user based on the JWT token provid
 - **`403 Forbidden`** (Account inactive or suspended):
   ```json
   {
+    "type": "about:blank",
+    "title": "Forbidden",
     "status": 403,
-    "message": "Account status INACTIVE is not allowed to access this resource",
-    "timestamp": "2026-08-05T21:20:00"
+    "detail": "Account status INACTIVE is not allowed to access this resource"
+  }
+  ```
+
+---
+
+### 6. Upload School Fees Configuration Spreadsheet
+
+Enables Administrators or Principals to upload structured Excel spreadsheets (`.xlsx`) containing school fee breakdowns (tuition, total fees, and term minimum percentages) across grades and senior secondary departments.
+
+- **Endpoint**: `POST /api/v1/schoolfee/excel`
+- **Access**: Secured (`ACTIVE`, `ADMIN`, `PRINCIPAL`)
+- **Content-Type**: `multipart/form-data`
+
+#### Request Parameters
+- `file` *(binary)*: The `.xlsx` workbook specifying fees configuration per grade/department.
+
+#### Success Response (`201 Created`)
+```json
+{
+  "count": 1,
+  "data": [
+    {
+      "session": "2026/2027",
+      "department": "SCIENCE",
+      "grade": "SS1",
+      "tuition": 150000.0,
+      "total": 220000.0,
+      "firstTermMinPercentage": 0.5,
+      "secondTermMinPercentage": 0.8,
+      "thirdTermMinPercentage": 1.0
+    }
+  ]
+}
+```
+
+#### Error Responses
+
+- **`400 Bad Request`** (Invalid percentage order, percentage > 100%, or bad Excel structure):
+  ```json
+  {
+    "type": "about:blank",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "Row: 2 First term minimum percentage can't be greater than the Second term minimum percentage"
+  }
+  ```
+- **`401 Unauthorized` / `403 Forbidden`** (Missing or insufficient permissions):
+  ```json
+  {
+    "error": "Invalid JWT"
+  }
+  ```
+
+---
+
+### 7. Initiate School Fees Payment
+
+Initiates a Paystack checkout transaction for a parent paying fees on behalf of their ward.
+
+- **Endpoint**: `POST /api/v1/schoolfee/payment`
+- **Access**: Secured (`ACTIVE`, `PARENT`)
+- **Headers**: `Authorization: Bearer <jwt_token>`
+- **Content-Type**: `application/json`
+
+#### Request Body
+```json
+{
+  "studentId": "STU/2026/001",
+  "amount": 100000.0
+}
+```
+
+#### Success Response (`201 Created`)
+```json
+{
+  "redirectUrl": "https://checkout.paystack.com/0123456789abcdef"
+}
+```
+
+#### Error Responses
+
+- **`400 Bad Request`** (Payment exceeds total outstanding amount or prior fees unpaid):
+  ```json
+  {
+    "type": "about:blank",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "Exceeded total amount"
+  }
+  ```
+- **`401 Unauthorized` / `403 Forbidden`**:
+  ```json
+  {
+    "error": "Invalid JWT"
+  }
+  ```
+
+---
+
+### 8. Paystack Payment Webhook
+
+Processes asynchronous transaction lifecycle events from Paystack, verifies HMAC signature, and updates fee transaction and ledger status.
+
+- **Endpoint**: `POST /api/v1/schoolfee/webhook`
+- **Access**: Public
+- **Content-Type**: `application/json`
+
+#### Request Body
+```json
+{
+  "signature": "a1b2c3d4e5f6...",
+  "rawPayload": "{\"event\":\"charge.success\",\"data\":{\"reference\":\"TX-123456\",\"status\":\"success\"}}"
+}
+```
+
+#### Success Response (`201 Created`)
+*Empty Body*
+
+#### Error Responses
+
+- **`400 Bad Request`** (Invalid signature or malformed payload):
+  ```json
+  {
+    "type": "about:blank",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "Invalid Webhook Signature"
+  }
+  ```
+- **`409 Conflict`** (Duplicate transaction reference):
+  ```json
+  {
+    "type": "about:blank",
+    "title": "Conflict",
+    "status": 409,
+    "detail": "Transaction already processed"
+  }
+  ```
+
+---
+
+### 9. Verify School Fees Payment Eligibility
+
+Verifies whether a student has met the required percentage thresholds to qualify for school term activities (such as examinations or registration) for a specific academic session.
+
+- **Endpoint**: `GET /api/v1/schoolfee/verification`
+- **Access**: Authenticated
+- **Content-Type**: `application/json`
+
+#### Request Body
+```json
+{
+  "studentID": "STU/2026/001",
+  "session": "2026/2027"
+}
+```
+
+#### Success Response (`201 Created`)
+```json
+{
+  "studentFirstName": "Tunde",
+  "studentLastName": "Adebayo",
+  "qualifiedForFirstTerm": true,
+  "qualifiedForSecondTerm": true,
+  "qualifiedForThirdTerm": false
+}
+```
+
+#### Error Responses
+
+- **`400 Bad Request`** (Invalid session format or student ID):
+  ```json
+  {
+    "type": "about:blank",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "Input Session could not be parsed into Session Object"
+  }
+  ```
+- **`404 Not Found`** (Fee ledger or classroom not found):
+  ```json
+  {
+    "type": "about:blank",
+    "title": "Not Found",
+    "status": 404,
+    "detail": "Fee Ledger does not exist for the student in this session"
+  }
+  ```
+
+---
+
+### 10. Get School Fees Details & Breakdown
+
+Fetches comprehensive school fee details, tuition amount, total charges, and payment progress for all wards linked to the logged-in parent.
+
+- **Endpoint**: `GET /api/v1/schoolfee`
+- **Access**: Secured (`ACTIVE`, `PARENT`)
+- **Headers**: `Authorization: Bearer <jwt_token>`
+
+#### Request Body
+*None*
+
+#### Success Response (`201 Created`)
+```json
+{
+  "data": [
+    {
+      "session": "2026/2027",
+      "studentID": "STU/2026/001",
+      "studentFirstName": "Tunde",
+      "studentLastName": "Adebayo",
+      "grade": "JSS2",
+      "department": "NONE",
+      "tuition": 150000.0,
+      "total": 220000.0,
+      "totalPaid": 120000.0
+    }
+  ]
+}
+```
+
+#### Error Responses
+
+- **`400 Bad Request`** (Parent has no linked child):
+  ```json
+  {
+    "type": "about:blank",
+    "title": "Bad Request",
+    "status": 400,
+    "detail": "This parent currently has no child assigned"
+  }
+  ```
+- **`401 Unauthorized` / `403 Forbidden`**:
+  ```json
+  {
+    "error": "Invalid JWT"
   }
   ```
 
@@ -388,26 +639,56 @@ Fetches profile information for the logged-in user based on the JWT token provid
 
 ## Global Exception & Error Responses
 
-The system uses a centralized `@RestControllerAdvice` exception handler (`GlobalExceptionHandler`). Error responses follow two standard formats:
+The system uses a centralized `@RestControllerAdvice` exception handler ([`GlobalExceptionHandler`](file:///src/main/java/com/school/eportal/utils/GlobalExceptionHandler.java)). All exceptions are formatted and returned as standard RFC 7807 **`ProblemDetail`** objects.
 
-### 1. Standard Domain Error Response (`ExceptionResponse`)
-Returned for custom application business exceptions (e.g. `AccountNotFoundException`, `InvalidClassroomException`, `ExcelParserException`).
+### 1. Standard Domain Error Response (`ProblemDetail`)
+Returned for custom application business exceptions (e.g. `InactiveAccountStatusException`, `InvalidPasswordException`, `AccountNotFoundException`, `InvalidClassroomException`, `ExcelParserException`).
 
 ```json
 {
+  "type": "about:blank",
+  "title": "Bad Request",
   "status": 400,
-  "message": "Error description message explaining the precise failure",
-  "timestamp": "2026-08-05T21:20:00.123456"
+  "detail": "Error description message explaining the precise failure"
 }
 ```
 
-Common status codes returned in `ExceptionResponse`:
-- `400 BAD REQUEST`: Invalid request payloads, parsing errors, invalid status transitions.
-- `401 UNAUTHORIZED`: Invalid credentials or missing user context.
-- `404 NOT FOUND`: Requested resource or account does not exist.
+#### Domain Exception Classes & Status Code Mapping
+| Exception Class | Status | Description / Trigger Condition |
+| :--- | :--- | :--- |
+| `InactiveAccountStatusException` *(New)* | `400 BAD REQUEST` | Attempting actions on a child or user account that has not yet been activated |
+| `InvalidPasswordException` *(New)* | `400 BAD REQUEST` | Password change failed due to incorrect old password |
+| `InvalidAccountStatusException` | `400 BAD REQUEST` | Account is already active or invalid status transition attempted |
+| `InvalidAmountException` | `400 BAD REQUEST` | Payment amount is invalid or exceeds total required fees |
+| `InvalidBulkRegistration` | `400 BAD REQUEST` | Bulk user onboarding failure due to duplicate usernames |
+| `InvalidCellValueException` | `400 BAD REQUEST` | Excel cell value formatting error or missing mandatory cell |
+| `InvalidClassroomException` | `400 BAD REQUEST` | Grade and division combination does not exist |
+| `InvalidDateOfBirthException` | `400 BAD REQUEST` | Date of birth validation failure against registered records |
+| `InvalidFileTypeException` | `400 BAD REQUEST` | Uploaded document is not a valid Microsoft Excel file |
+| `InvalidPercentageException` | `400 BAD REQUEST` | Term fees percentage breakdown exceeds 100% or fails order checks |
+| `InvalidPreRegistrationException` | `400 BAD REQUEST` | Excel sheet contains empty student/teacher rosters |
+| `InvalidRoleException` | `400 BAD REQUEST` | Operation not applicable to the specified user role |
+| `InvalidSchoolSessionException` | `400 BAD REQUEST` | Invalid school session year format |
+| `InvalidSessionException` | `400 BAD REQUEST` | Academic session could not be parsed into a valid Session object |
+| `InvalidUserException` | `400 BAD REQUEST` | User reference is invalid |
+| `InvalidUsernameException` | `400 BAD REQUEST` | Username or email address already registered |
+| `InvalidWebhookSignature` | `400 BAD REQUEST` | Paystack webhook verification failure |
+| `OutstandingSchoolFeesException` | `400 BAD REQUEST` | Student has uncleared prior term or session fees |
+| `ParentChildRelationshipException` | `400 BAD REQUEST` | Parent account has no linked child or invalid ward relationship |
+| `ParsingException` | `400 BAD REQUEST` | Payload or payload structure parsing error |
+| `SchoolFeesException` | `400 BAD REQUEST` | School fees configuration error |
+| `ValidatorException` | `400 BAD REQUEST` | General validation error |
+| `UserNotFoundException` | `401 UNAUTHORIZED` | User not found in authentication context |
+| `AuthenticationNotSupportedException` | `401 UNAUTHORIZED` | Authentication mechanism not supported |
+| `AcademicSessionDoesntExistException` | `404 NOT FOUND` | Academic session does not exist |
+| `AccountNotFoundException` | `404 NOT FOUND` | Account record does not exist |
+| `FeeLedgerDoesntExistException` | `404 NOT FOUND` | Fee ledger for student/session does not exist |
+| `FeeTransactionDoesntExistException` | `404 NOT FOUND` | Fee transaction record does not exist |
+| `NoSuchClassroomException` | `404 NOT FOUND` | Classroom does not exist |
+| `TransactionAlreadyExistsException` | `409 CONFLICT` | Duplicate transaction reference detected |
 
-### 2. Spring RFC-7807 Validation Error (`ProblemDetail`)
-Returned when request body validation fails (`MethodArgumentNotValidException`).
+### 2. Spring RFC 7807 Validation Error (`ProblemDetail`)
+Returned when request body validation fails (`MethodArgumentNotValidException`). Includes a key-value mapping of field validation errors under the `errors` property.
 
 ```json
 {
@@ -417,7 +698,8 @@ Returned when request body validation fails (`MethodArgumentNotValidException`).
   "detail": "One or more fields are invalid",
   "instance": "/api/v1/auth/registration",
   "errors": {
-    "fieldName": "Validation constraint message"
+    "username": "Must be a valid Email Address",
+    "password": "Password must be at least 8 characters"
   }
 }
 ```

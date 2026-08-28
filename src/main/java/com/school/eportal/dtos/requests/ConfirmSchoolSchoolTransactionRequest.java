@@ -5,7 +5,6 @@ import lombok.*;
 @Setter
 @Getter
 @Builder
-@AllArgsConstructor
-@NoArgsConstructor
+
 public class ConfirmSchoolSchoolTransactionRequest {
 }

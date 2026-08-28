@@ -2,9 +2,12 @@ package com.school.eportal.data.models;
 
 import com.school.eportal.data.models.enums.Department;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,16 +27,9 @@ public class DepartmentPath {
     @Builder.Default
     private List<String> students = new ArrayList<>();
 
-    public void addStudent(Account account) {
-        if (students == null) {
-            students = new ArrayList<>();
-        }
-        students.add(account.getId());
-    }
+    @CreatedDate
+    private Instant createdAt;
 
-    public void removeStudent(Account account) {
-        if (students != null) {
-            students.remove(account.getId());
-        }
-    }
+    @LastModifiedDate
+    private Instant updatedAt;
 }

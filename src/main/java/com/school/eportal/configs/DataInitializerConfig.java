@@ -1,12 +1,12 @@
 package com.school.eportal.configs;
 
 
+import com.school.eportal.data.models.Account;
 import com.school.eportal.data.models.Classroom;
 import com.school.eportal.data.models.DepartmentPath;
 import com.school.eportal.data.models.Session;
-import com.school.eportal.data.models.enums.Department;
-import com.school.eportal.data.models.enums.Division;
-import com.school.eportal.data.models.enums.Grade;
+import com.school.eportal.data.models.enums.*;
+import com.school.eportal.data.repositories.Accounts;
 import com.school.eportal.data.repositories.Classrooms;
 import com.school.eportal.data.repositories.DepartmentPathRepo;
 import com.school.eportal.data.repositories.Sessions;
@@ -30,6 +30,7 @@ public class DataInitializerConfig {
     private final Classrooms classrooms;
     private final DepartmentPathRepo departmentPathRepo;
     private final Sessions sessions;
+    private final Accounts accounts;
 
     // Runs at the start of the project
     @Bean

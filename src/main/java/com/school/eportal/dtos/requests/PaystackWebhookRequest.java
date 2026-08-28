@@ -10,5 +10,4 @@ import lombok.Setter;
 public class PaystackWebhookRequest {
     private String signature;
     private String rawPayload;
-
 }

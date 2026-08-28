@@ -10,7 +10,7 @@ import com.school.eportal.data.models.enums.AccountStatus;
 import com.school.eportal.data.models.enums.Role;
 import com.school.eportal.exceptions.AccountNotFoundException;
 import com.school.eportal.security.dtos.responses.AccountResponse;
-import com.school.eportal.services.interfaces.AccountService;
+import com.school.eportal.services.interfaces.AuthService;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -38,7 +38,7 @@ import static org.springframework.http.HttpHeaders.AUTHORIZATION;
 @RequiredArgsConstructor
 public class CustomAuthorizationFilter extends OncePerRequestFilter {
 
-    private final AccountService accountService;
+    private final AuthService authService;
     private final ObjectMapper objectMapper;
 
     @Value("${jwt.signing.key}")
@@ -70,7 +70,7 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
                 log.debug("USER ID: {}", id);
 
 
-                AccountResponse userAccountBy = accountService.getUserAccountById(id);
+                AccountResponse userAccountBy = authService.getUserAccountById(id);
 
                 Role role = userAccountBy.getRole();
                 AccountStatus accountStatus = userAccountBy.getAccountStatus();
@@ -110,7 +110,6 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
 
     private static boolean isPublicApi(HttpServletRequest request) {
         return request.getServletPath().equals("/api/v1/auth/password" )
-                || request.getServletPath().equals("/api/v1/preregistration/excel")
                 || request.getServletPath().equals("/api/v1/auth/registration");
     }
 

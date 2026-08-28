@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authorization.AuthorityAuthorizationManager;
+import org.springframework.security.authorization.AuthorizationManagers;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.web.SecurityFilterChain;
@@ -28,13 +30,22 @@ public class SecurityFilterChainConfiguration {
                 .authorizeHttpRequests((c) -> c
                         .requestMatchers(HttpMethod.PATCH, "/api/v1/preregistration/activation").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/v1/auth/registration").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/v1/preregistration/excel"
-                        ).hasAnyAuthority("PRINCIPAL", "ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/v1/profile")
-                        .hasAuthority("ACTIVE")
-                        .anyRequest().authenticated())
+                        .requestMatchers(HttpMethod.POST, "/api/v1/preregistration/excel")
+                        .access(AuthorizationManagers.allOf(
+                                AuthorityAuthorizationManager.hasAuthority("ACTIVE"),
+                                AuthorityAuthorizationManager.hasAnyAuthority("PRINCIPAL", "ADMIN")
+                        ))
+                        .requestMatchers(HttpMethod.GET, "/api/v1/profile").hasAuthority("ACTIVE")
+                        .requestMatchers(HttpMethod.POST, "/api/v1/schoolfee/excel")
+                        .access(AuthorizationManagers.allOf(
+                                AuthorityAuthorizationManager.hasAuthority("ACTIVE"),
+                                AuthorityAuthorizationManager.hasAnyAuthority("PRINCIPAL", "ADMIN")
+                        ))
+                        .requestMatchers(HttpMethod.POST, "/api/v1/schoolfee/payment").hasAllAuthorities("ACTIVE", "PARENT")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/schoolfee").hasAllAuthorities("ACTIVE", "PARENT")
+                        .requestMatchers(HttpMethod.GET, "/api/v1/schoolfee/verification").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/v1/schoolfee/webhook").permitAll()
+                        .anyRequest().hasAuthority("ACTIVE"))
                 .build();
-
-
     }
 }
