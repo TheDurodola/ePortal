@@ -4,7 +4,9 @@ import com.school.eportal.data.models.enums.TransactionStatus;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.time.Instant;
@@ -23,4 +25,10 @@ public class FeeTransaction {
     private String paymentReference;
     private String madeBy;
     private String feeLedger;
+
+    @CreatedDate
+    private Instant createdAt;
+
+    @LastModifiedDate
+    private Instant updatedAt;
 }

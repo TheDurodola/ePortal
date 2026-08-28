@@ -5,10 +5,13 @@ import com.school.eportal.data.models.enums.Grade;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 
 @Setter
 @Getter
@@ -33,4 +36,10 @@ public class SchoolFee {
     private BigDecimal secondTermMinPercentage;
 
     private BigDecimal thirdTermMinPercentage;
+
+    @CreatedDate
+    private Instant createdAt;
+
+    @LastModifiedDate
+    private Instant updatedAt;
 }

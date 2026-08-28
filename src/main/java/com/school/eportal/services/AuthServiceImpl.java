@@ -18,12 +18,10 @@ import com.school.eportal.dtos.excel.StudentExcelDTOResponseBody;
 import com.school.eportal.dtos.excel.TeacherExcelDTO;
 import com.school.eportal.dtos.excel.TeacherExcelDTOResponseBody;
 import com.school.eportal.dtos.requests.AccountActivationRequest;
+import com.school.eportal.dtos.requests.ChangePasswordRequest;
 import com.school.eportal.dtos.requests.ParentRegistrationRequest;
 import com.school.eportal.dtos.requests.RegisterBulkUsersRequest;
-import com.school.eportal.dtos.responses.AccountActivationResponse;
-import com.school.eportal.dtos.responses.ParentRegistrationResponse;
-import com.school.eportal.dtos.responses.PreRegistrationResponse;
-import com.school.eportal.dtos.responses.RegisterBulkUsersResponse;
+import com.school.eportal.dtos.responses.*;
 import com.school.eportal.exceptions.*;
 import com.school.eportal.security.dtos.responses.AccountResponse;
 import com.school.eportal.services.interfaces.AuthService;
@@ -31,16 +29,14 @@ import com.school.eportal.utils.ExcelParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static com.school.eportal.utils.Mutator.mutate;
 import static com.school.eportal.utils.NameFormatter.toProperCase;
@@ -177,6 +173,11 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidDateOfBirthException("Incorrect Child Date Of Birth");
         }
 
+        if (childAccount.getStatus().equals(AccountStatus.INACTIVE)) {
+            throw new InactiveAccountStatusException("The child account is yet to be activated." +
+                    " Kindly assist your child in activating his account first.");
+        }
+
         Account newParentAccount = Account.builder()
                 .firstName(request.getFirstName())
                 .role(Role.PARENT)
@@ -184,6 +185,7 @@ public class AuthServiceImpl implements AuthService {
                 .password(passwordEncoder.encode(request.getPassword()))
                 .dateOfBirth(request.getDateOfBirth())
                 .lastName(request.getLastName())
+                .status(AccountStatus.ACTIVE)
                 .build();
 
         Account savedParentAccount = accounts.save(newParentAccount);
@@ -199,6 +201,21 @@ public class AuthServiceImpl implements AuthService {
                 .parentFirstName(toProperCase(savedParentAccount.getFirstName()))
                 .childFirstName(toProperCase(childAccount.getFirstName()))
                 .build();
+    }
+
+    @Override
+    public ChangePasswordResponse changePassword(ChangePasswordRequest request, Authentication authentication) {
+        String userID = Objects.requireNonNull(authentication.getPrincipal()).toString();
+
+        Account account = accounts.findById(userID).orElseThrow(() -> new InvalidUsernameException("User not found."));
+
+        if (!passwordEncoder.matches(request.oldPassword(), account.getPassword())) {
+            throw new InvalidPasswordException("Incorrect old password.");
+        }
+
+        account.setPassword(passwordEncoder.encode(request.newPassword()));
+        accounts.save(account);
+        return new ChangePasswordResponse("Password updated successfully.");
     }
 
     @Override
@@ -245,6 +262,7 @@ public class AuthServiceImpl implements AuthService {
         });
         return response;
     }
+
 
     private @NonNull List<StudentExcelDTOResponseBody> processStudents(@NonNull MultipartFile file) throws IOException {
         List<StudentExcelDTO> students = parser.parseStudentExcelFile(file);

@@ -110,8 +110,11 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
     @Override
     @Transactional
     public PaySchoolFeesResponse paySchoolFees(@NonNull PaySchoolFeesRequest request, @NonNull Authentication authentication) {
+
+log.info("The student id is {}", request.getStudentId());
         Account parent = accounts.findById(Objects.requireNonNull(authentication.getPrincipal()).toString()
         ).orElseThrow(() -> new UserNotFoundException("Parent account not found"));
+
         Session session = sessions.findByIsCurrentTrue()
                 .orElseThrow(() -> new InvalidSessionException("Payment cannot be made yet as the session is not yet publish."));
         Account student = accounts.findById(request.getStudentId())
@@ -249,6 +252,7 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
 
             List<SchoolFeesDetailPayload> outstandingSchoolFeesPayload = getOutstandingSchoolFeesID(childIDs);
 
+
             List<SchoolFeesDetailPayload> recordsOfStudentsWithoutOutstandings = getRecordsOfStudentsWithoutOutstandings(outstandingSchoolFeesPayload, childIDs);
 
             List<SchoolFeesDetailPayload> allChildrenFeeDetails = Stream.concat(
@@ -276,7 +280,9 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
     }
 
     private String createSession(@NonNull String session) {
-        int startYearInInteger = parseInt(session.substring(0, 3));
+        log.info(session);
+        int startYearInInteger = parseInt(session.substring(0, 4));
+        log.info("Start Year: {}", startYearInInteger);
         if (sessions.findByStartYear(startYearInInteger).isPresent()) {
             return sessions.findByStartYear(startYearInInteger).get().getId();
         }
@@ -288,6 +294,8 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
         } else if (isShortSession(session)) {
             sessionObj = Session.builder().startYear(startYearInInteger).endYear(startYearInInteger + 1).isCurrent(false).build();
         } else if (isFullSession(session)) {
+            sessionObj = Session.builder().startYear(startYearInInteger).endYear(startYearInInteger + 1).isCurrent(false).build();
+        } else if (isFullSessionWithoutSlash(session)) {
             sessionObj = Session.builder().startYear(startYearInInteger).endYear(startYearInInteger + 1).isCurrent(false).build();
         } else throw new InvalidSessionException("Input Session could not be parsed into Session Object");
 
@@ -449,8 +457,15 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
                     ).orElseThrow(() -> new InvalidSchoolSessionException("Invalid school session"));
 
                     return SchoolFeesDetailPayload.builder()
+                            .studentID(payload.getStudentID())
+                            .studentFirstName(payload.getStudentFirstName())
+                            .studentLastName(payload.getStudentLastName())
+                            .grade(payload.getGrade())
+                            .department(payload.getDepartment())
+                            .session(payload.getSession())
                             .tuition(koboToNaira(fee.getTuitionInKobo()))
                             .total(koboToNaira(fee.getTotal()))
+                            .totalPaid(BigDecimal.ZERO)
                             .build();
                 })
                 .toList();

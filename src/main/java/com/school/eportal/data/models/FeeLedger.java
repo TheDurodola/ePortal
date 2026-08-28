@@ -2,10 +2,13 @@ package com.school.eportal.data.models;
 
 import com.school.eportal.data.models.enums.FeeLedgerStatus;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.mongodb.core.index.CompoundIndex;
 import org.springframework.data.mongodb.core.mapping.Document;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,5 +33,11 @@ public class FeeLedger {
 
     @Builder.Default
     private List<String> transactions = new ArrayList<>();
+
+    @CreatedDate
+    private Instant createdAt;
+
+    @LastModifiedDate
+    private Instant updatedAt;
 
 }

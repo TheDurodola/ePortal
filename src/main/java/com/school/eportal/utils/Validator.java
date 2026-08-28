@@ -50,7 +50,16 @@ public class Validator {
         if (input == null) {
             return false;
         }
-        return FULL_SESSION_PATTERN.matcher(input).matches();
+        return SESSION_PATTERN.matcher(input).matches();
+    }
+
+    private static final Pattern SESSION_PATTERN_WITHOUT_SLASH = Pattern.compile("^\\d{8}$");
+
+    public static boolean isFullSessionWithoutSlash(String input) {
+        if (input == null) {
+            return false;
+        }
+        return SESSION_PATTERN_WITHOUT_SLASH.matcher(input).matches();
     }
 
     public static boolean isValidSessionFormat(String input) {

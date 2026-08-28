@@ -36,7 +36,7 @@ public class SchoolFeeController {
 
 
     @PostMapping(value = "/payment")
-    public ResponseEntity<PaySchoolFeesResponse> paySchoolFee(PaySchoolFeesRequest request, Authentication authentication){
+    public ResponseEntity<PaySchoolFeesResponse> paySchoolFee(@RequestBody PaySchoolFeesRequest request, Authentication authentication){
 
         PaySchoolFeesResponse response = schoolFeeService.paySchoolFees(request, authentication);
 
@@ -47,7 +47,7 @@ public class SchoolFeeController {
 
 
     @PostMapping(value = "/webhook")
-    public ResponseEntity<?> updatePayment(PaystackWebhookRequest request){
+    public ResponseEntity<?> updatePayment(@RequestBody PaystackWebhookRequest request){
         schoolFeeService.updateTransaction(request);
 
         return ResponseEntity
@@ -56,7 +56,7 @@ public class SchoolFeeController {
     }
 
     @GetMapping(value = "/verification")
-    public ResponseEntity<VerifySchoolFeesPaymentResponse> verifySchoolFeesDetails(VerifySchoolFeesPaymentRequest request){
+    public ResponseEntity<VerifySchoolFeesPaymentResponse> verifySchoolFeesDetails(@RequestBody VerifySchoolFeesPaymentRequest request){
 
         VerifySchoolFeesPaymentResponse response = schoolFeeService.verifySchoolFees(request);
 

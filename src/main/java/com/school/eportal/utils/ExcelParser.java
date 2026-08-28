@@ -41,11 +41,18 @@ public class ExcelParser {
             Sheet sheet = workbook.getSheetAt(0);
 
             int lastRowNum = sheet.getLastRowNum();
+            if (isRegistrationHeader(sheet.getRow(sheet.getFirstRowNum()))){
+                sheet.removeRow(sheet.getRow(sheet.getFirstRowNum()));
+            }
+
             for (Row currentRow : sheet) {
-                if (isRegistrationHeader(currentRow)) {
-                    continue;
+
+                String firstName;
+                try {
+                    firstName = getStringCellValue(currentRow.getCell(0));
+                }catch (InvalidCellValueException e){
+                    break;
                 }
-                String firstName = getStringCellValue(currentRow.getCell(0));
                 String lastName = getStringCellValue(currentRow.getCell(1));
 
                 LocalDate dateOfBirth;
@@ -55,8 +62,15 @@ public class ExcelParser {
                     log.info("Teacher {} {} has an invalid date of birth ", firstName, lastName);
                     continue;
                 }
-                String grade = getStringCellValue(currentRow.getCell(3));
-                String division = getStringCellValue(currentRow.getCell(4));
+                String grade;
+                String division;
+                try {
+                    grade = getStringCellValue(currentRow.getCell(3));
+                     division = getStringCellValue(currentRow.getCell(4));
+                } catch (InvalidCellValueException e) {
+                    grade = "NONE";
+                    division = "NONE";
+                }
 
                 Grade gradeValue;
                 Division divisionValue;
@@ -96,11 +110,19 @@ public class ExcelParser {
             Sheet sheet = workbook.getSheetAt(1);
 
             int lastRowNum = sheet.getLastRowNum();
+
+            if (isRegistrationHeader(sheet.getRow(sheet.getFirstRowNum()))){
+                sheet.removeRow(sheet.getRow(sheet.getFirstRowNum()));
+            }
+
             for (Row currentRow : sheet) {
-                if (isRegistrationHeader(currentRow)){
-                    continue;
+
+                String firstName;
+                try {
+                    firstName = getStringCellValue(currentRow.getCell(0));
+                }catch (InvalidCellValueException e){
+                    break;
                 }
-                String firstName = getStringCellValue(currentRow.getCell(0));
                 String lastName = getStringCellValue(currentRow.getCell(1));
                 LocalDate dateOfBirth;
                 try {
@@ -149,28 +171,29 @@ public class ExcelParser {
              Workbook workbook = WorkbookFactory.create(is)) {
 
             Sheet sheet = workbook.getSheetAt(0);
+            String session = sheet.getSheetName();
+
             int lastRowNum = sheet.getLastRowNum();
             for (Row currentRow : sheet) {
                 if (isSchoolFeeHeader(currentRow)){
                     continue;
                 }
-                String session = getStringCellValue(currentRow.getCell(0));
-                String departmentInString = getStringCellValue(currentRow.getCell(1));
-                String grade = getStringCellValue(currentRow.getCell(2));
-                BigDecimal tuition = getBigDecimalCellValue(currentRow.getCell(3));
-                BigDecimal firstTermMinPercentage = getBigDecimalCellValue(currentRow.getCell(4));
-                BigDecimal secondTermMinPercentage = getBigDecimalCellValue(currentRow.getCell(5));
-                BigDecimal thirdTermMinPercentage = getBigDecimalCellValue(currentRow.getCell(6));
+                String departmentInString = getStringCellValue(currentRow.getCell(0));
+                String grade = getStringCellValue(currentRow.getCell(1));
+                BigDecimal tuition = getBigDecimalCellValue(currentRow.getCell(2));
+                BigDecimal firstTermMinPercentage = getBigDecimalCellValue(currentRow.getCell(3));
+                BigDecimal secondTermMinPercentage = getBigDecimalCellValue(currentRow.getCell(4));
+//                BigDecimal thirdTermMinPercentage = getBigDecimalCellValue(currentRow.getCell(5));
 
                 if (Validator.isValidSessionFormat(session)) {
-                    throw new ExcelParserException(identifyCell(currentRow.getCell(0)) + " invalid session format." +
-                            "kindly use 2019/20 or 2019/2020");
+                    throw new ExcelParserException(identifyCell(currentRow.getCell(0)) + " Invalid session format." +
+                            " Kindly use 2019/20 or 2019/2020");
                 }
                 Department department;
                 if (departmentInString == null || departmentInString.isBlank()) {
                     department = Department.NONE;
                 }else department = Department.valueOf(departmentInString);
-                validatePercentages(firstTermMinPercentage, secondTermMinPercentage, thirdTermMinPercentage, currentRow);
+                validatePercentages(firstTermMinPercentage, secondTermMinPercentage, currentRow);
                 records.add(SchoolFeeExcelExtractDTO
                         .builder()
                             .session(session)
@@ -180,7 +203,7 @@ public class ExcelParser {
                                     .round(new  MathContext(2, RoundingMode.HALF_UP)))
                             .secondTermMinPercentage(secondTermMinPercentage
                                     .round(new  MathContext(2, RoundingMode.HALF_UP)))
-                            .thirdTermMinPercentage(thirdTermMinPercentage
+                            .thirdTermMinPercentage(BigDecimal.valueOf(100)
                                     .round(new  MathContext(2, RoundingMode.HALF_UP)))
                             .grade(Grade.valueOf(grade.toUpperCase()))
                         .build());
@@ -194,34 +217,34 @@ public class ExcelParser {
         return records;
     }
 
-    private void validatePercentages(BigDecimal firstTermMinPercentage, BigDecimal secondTermMinPercentage, BigDecimal thirdTermMinPercentage, Row row) {
-        validateIfPercentagesAreWithinZeroAndOneHundred(firstTermMinPercentage, secondTermMinPercentage, thirdTermMinPercentage);
+    private void validatePercentages(BigDecimal firstTermMinPercentage, BigDecimal secondTermMinPercentage, Row row) {
+        validateIfPercentagesAreWithinZeroAndOneHundred(firstTermMinPercentage, secondTermMinPercentage);
         if (!(firstTermMinPercentage.compareTo(secondTermMinPercentage) <= 0)) {
             throw new InvalidPercentageException("Row:" + row.getRowNum() + "First term minimum percentage can't be greater than the Second term minimum percentage");
         }
 
-        if (!(secondTermMinPercentage.compareTo(thirdTermMinPercentage) <= 0)) {
+        if (!(secondTermMinPercentage.compareTo(BigDecimal.valueOf(100)) <= 0)) {
             throw new InvalidPercentageException("Row:" + row.getRowNum() + "Second term minimum percentage can't be greater than the Third term minimum percentage");
         }
 
     }
 
-    private static void validateIfPercentagesAreWithinZeroAndOneHundred(BigDecimal firstTermMinPercentage, BigDecimal secondTermMinPercentage, BigDecimal thirdTermMinPercentage) {
-        if (isGreaterThanOneHundredPercentage(firstTermMinPercentage, secondTermMinPercentage, thirdTermMinPercentage)) {
+    private static void validateIfPercentagesAreWithinZeroAndOneHundred(BigDecimal firstTermMinPercentage, BigDecimal secondTermMinPercentage) {
+        if (isGreaterThanOneHundredPercentage(firstTermMinPercentage, secondTermMinPercentage)) {
             throw new InvalidPercentageException("Percentage can't be greater than 100%");
         }
 
-        if (isLessThanZeroPercentage(firstTermMinPercentage, secondTermMinPercentage, thirdTermMinPercentage)) {
+        if (isLessThanZeroPercentage(firstTermMinPercentage, secondTermMinPercentage)) {
             throw new InvalidPercentageException("Percentage can't be greater than 100%");
         }
     }
 
-    private static boolean isGreaterThanOneHundredPercentage(@NonNull BigDecimal firstTermMinPercentage, BigDecimal secondTermMinPercentage, BigDecimal thirdTermMinPercentage) {
-        return firstTermMinPercentage.compareTo(BigDecimal.valueOf(100)) > 0 || secondTermMinPercentage.compareTo(BigDecimal.valueOf(100)) > 0 || thirdTermMinPercentage.compareTo(BigDecimal.valueOf(100)) > 0;
+    private static boolean isGreaterThanOneHundredPercentage(@NonNull BigDecimal firstTermMinPercentage, BigDecimal secondTermMinPercentage) {
+        return firstTermMinPercentage.compareTo(BigDecimal.valueOf(100)) > 0 || secondTermMinPercentage.compareTo(BigDecimal.valueOf(100)) > 0;
     }
 
-    private static boolean isLessThanZeroPercentage(@NonNull BigDecimal firstTermMinPercentage, BigDecimal secondTermMinPercentage, BigDecimal thirdTermMinPercentage) {
-        return firstTermMinPercentage.compareTo(BigDecimal.ZERO) < 0 || secondTermMinPercentage.compareTo(BigDecimal.ZERO) < 0 || thirdTermMinPercentage.compareTo(BigDecimal.ZERO) < 0;
+    private static boolean isLessThanZeroPercentage(@NonNull BigDecimal firstTermMinPercentage, BigDecimal secondTermMinPercentage) {
+        return firstTermMinPercentage.compareTo(BigDecimal.ZERO) < 0 || secondTermMinPercentage.compareTo(BigDecimal.ZERO) < 0 ;
     }
 
     private boolean isRegistrationHeader(@NonNull Row currentRow) {
@@ -234,7 +257,8 @@ public class ExcelParser {
         list.add(thirdCell);
 
         return list.contains("S/N") || list.contains("DEPARTMENT") ||
-                list.contains("GRADE") || list.contains("TUITION");
+                list.contains("GRADE") || list.contains("TUITION") || list.contains("FIRSTNAME")
+                || list.contains("LASTNAME");
 
     }
 
@@ -242,12 +266,16 @@ public class ExcelParser {
         String firstCell = getStringCellValue(currentRow.getCell(0));
         String secondCell = getStringCellValue(currentRow.getCell(1));
         String thirdCell = getStringCellValue(currentRow.getCell(2));
+        String fourthCell = getStringCellValue(currentRow.getCell(3));
+
         List<String> list = new ArrayList<>();
         list.add(firstCell);
         list.add(secondCell);
         list.add(thirdCell);
+        list.add(fourthCell);
 
-        return list.contains("FIRSTNAME") || list.contains("DATE OF BIRTH") || list.contains("LASTNAME");
+        return list.contains("SESSION") || list.contains("DEPARTMENT") || list.contains("GRADE")
+                || list.contains("TUITION");
 
     }
 
@@ -285,7 +313,7 @@ public class ExcelParser {
     }
 
     private static @NonNull String identifyCell(@NonNull Cell cell) {
-        return "Sheet:" + cell.getSheet().getSheetName() + "Cell:" +
+        return "Sheet:" + cell.getSheet().getSheetName() + " Cell:" +
                 cell.getAddress().toString();
     }
 
