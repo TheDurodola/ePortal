@@ -250,7 +250,21 @@ Enables Administrators or Principals to upload structured Excel spreadsheets (`.
 - **Content-Type**: `multipart/form-data`
 
 #### Request Parameters
-- `file` *(binary)*: The `.xlsx` file containing student and teacher rosters.
+- `file` *(binary)*: The `.xlsx` file containing student and teacher rosters. The spreadsheet file needs to contain **TWO** sheets.
+- Sheet 1 for the Teacher
+
+| FIRSTNAME | LASTNAME | DATE OF BIRTH | GRADE | DIVISION |
+|-----------|----------|---------------|-------|----------|
+| John      | Doe      | 02/01/1980    | JSS1  | A        |
+| Kodak     | Black    | 03/11/1992    |       |          |
+
+- Sheet 2 for the students
+
+| FIRSTNAME | LASTNAME | DATE OF BIRTH | GRADE  | DIVISION | DEPARTMENT |
+|-----------|----------|---------------|--------|----------|------------|
+| Nicki     | Minaj    | 02/11/2001    | CRECHE | A        | NONE       |
+| Jermaine  | Cole     | 01/01/2009    | JSS1   | B        | NONE       |
+| Kendrick  | Lamar    | 01/09/2005    | SS2    | A        | SCIENCE    |
 
 #### Success Response (`201 Created`)
 ```json
@@ -411,6 +425,14 @@ Enables Administrators or Principals to upload structured Excel spreadsheets (`.
 
 #### Request Parameters
 - `file` *(binary)*: The `.xlsx` workbook specifying fees configuration per grade/department.
+
+- Sheet name should be the session - 2019/2020, 2020/2021 etc.
+
+| DEPARTMENT | GRADE  | TUITION | FIRST TERM MIN PERCENTAGE | SECOND TERM MIN PERCENTAGE |
+|------------|--------|---------|---------------------------|----------------------------|
+| NONE       | CRECHE | 400000  | 30                        | 60                         |
+| ART        | SS2    | 500000  | 30                        | 75                         |
+| NONE       | JSS1   | 350000  | 25                        | 50                         |
 
 #### Success Response (`201 Created`)
 ```json
