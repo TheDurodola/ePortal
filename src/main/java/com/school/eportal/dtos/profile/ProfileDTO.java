@@ -11,7 +11,7 @@ import java.util.List;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public  class ProfileDTO {
+public class ProfileDTO {
     private String firstName;
     private String lastName;
     private String username;

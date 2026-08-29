@@ -10,6 +10,7 @@ import java.util.Optional;
 @Repository
 public interface FeeTransactions extends MongoRepository<FeeTransaction, String> {
     List<FeeTransaction> findByFeeLedger(String feeLedger);
+
     Optional<FeeTransaction> findByPaymentReference(String s);
 
 }

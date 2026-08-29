@@ -1,11 +1,12 @@
 package com.school.eportal.configs;
 
 
-import com.school.eportal.data.models.Account;
 import com.school.eportal.data.models.Classroom;
 import com.school.eportal.data.models.DepartmentPath;
 import com.school.eportal.data.models.Session;
-import com.school.eportal.data.models.enums.*;
+import com.school.eportal.data.models.enums.Department;
+import com.school.eportal.data.models.enums.Division;
+import com.school.eportal.data.models.enums.Grade;
 import com.school.eportal.data.repositories.Accounts;
 import com.school.eportal.data.repositories.Classrooms;
 import com.school.eportal.data.repositories.DepartmentPathRepo;
@@ -38,13 +39,13 @@ public class DataInitializerConfig {
     public CommandLineRunner initializeDefaultEntities() {
         return args -> {
             log.info("Checking system seed entities on startup...");
-            if (classrooms.count()==0) {
+            if (classrooms.count() == 0) {
                 createClassrooms();
             }
-            if (departmentPathRepo.count()==0){
+            if (departmentPathRepo.count() == 0) {
                 createDepartmentPaths();
             }
-            if (sessions.count()==0){
+            if (sessions.count() == 0) {
                 createCurrentSession();
             }
             log.info("System seed entities have been successfully loaded");
@@ -54,23 +55,24 @@ public class DataInitializerConfig {
     private void createCurrentSession() {
         LocalDate currentDate = LocalDate.now();
         Month month = currentDate.getMonth();
-        if (month.getValue()>=7) {
-            sessions.save(Session.builder().startYear(currentDate.getYear()).endYear(currentDate.getYear()+1).isCurrent(true).build());
-        }else sessions.save(Session.builder().startYear(currentDate.getYear()-1).endYear(currentDate.getYear()).isCurrent(true).build());
+        if (month.getValue() >= 7) {
+            sessions.save(Session.builder().startYear(currentDate.getYear()).endYear(currentDate.getYear() + 1).isCurrent(true).build());
+        } else
+            sessions.save(Session.builder().startYear(currentDate.getYear() - 1).endYear(currentDate.getYear()).isCurrent(true).build());
     }
 
     private void createDepartmentPaths() {
         log.info("Creating default department paths...");
         List<DepartmentPath> departmentPaths = new ArrayList<>();
         for (Department department : Department.values()) {
-            if (!department.equals(Department.NONE)){
+            if (!department.equals(Department.NONE)) {
                 departmentPaths.add(DepartmentPath.builder()
                         .department(department)
                         .build());
             }
         }
         departmentPathRepo.saveAll(departmentPaths);
-        log.info("{} Department paths have been successfully loaded",  departmentPaths.size());
+        log.info("{} Department paths have been successfully loaded", departmentPaths.size());
     }
 
     // Creates Classrooms at the start of the project

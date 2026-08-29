@@ -4,7 +4,10 @@ import com.school.eportal.data.models.Account;
 import com.school.eportal.data.models.Classroom;
 import com.school.eportal.data.models.DepartmentPath;
 import com.school.eportal.data.models.ParentChild;
-import com.school.eportal.data.models.enums.*;
+import com.school.eportal.data.models.enums.Department;
+import com.school.eportal.data.models.enums.Division;
+import com.school.eportal.data.models.enums.Grade;
+import com.school.eportal.data.models.enums.Role;
 import com.school.eportal.data.repositories.Accounts;
 import com.school.eportal.data.repositories.Classrooms;
 import com.school.eportal.data.repositories.DepartmentPathRepo;
@@ -17,7 +20,9 @@ import com.school.eportal.dtos.profile.ProfileDTO;
 import com.school.eportal.dtos.profile.StudentDTO;
 import com.school.eportal.dtos.profile.TeacherDTO;
 import com.school.eportal.dtos.responses.GetProfileResponse;
-import com.school.eportal.exceptions.*;
+import com.school.eportal.exceptions.InvalidUserException;
+import com.school.eportal.exceptions.NoSuchClassroomException;
+import com.school.eportal.exceptions.UserNotFoundException;
 import com.school.eportal.services.interfaces.UserService;
 import com.school.eportal.utils.ExcelParser;
 import lombok.RequiredArgsConstructor;
@@ -25,15 +30,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
 import java.util.*;
 
 import static com.school.eportal.utils.NameFormatter.toProperCase;
-import static com.school.eportal.utils.RandomPicker.generateSixRandomNumber;
 
 @RequiredArgsConstructor
 @Service
@@ -64,7 +65,7 @@ public class UserServiceImpl implements UserService {
             List<StudentDTO> classStudent = new ArrayList<>();
             try {
                 classStudent = processClassStudents(account, classStudent);
-            }catch (NoSuchClassroomException e){
+            } catch (NoSuchClassroomException e) {
                 log.info("non class teacher");
             }
             profile.setStudents(classStudent);
@@ -255,9 +256,6 @@ public class UserServiceImpl implements UserService {
         profile.setRole(account.getRole());
         profile.setUsername(account.getUsername().toUpperCase());
     }
-
-
-
 
 
     private void addStudentToDepartmentPath(DepartmentPath departmentPath, Account account) {

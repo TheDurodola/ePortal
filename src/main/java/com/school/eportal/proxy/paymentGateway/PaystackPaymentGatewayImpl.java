@@ -3,6 +3,7 @@ package com.school.eportal.proxy.paymentGateway;
 
 import com.school.eportal.proxy.paymentGateway.dtos.requests.InitiatePaymentRequest;
 import com.school.eportal.proxy.paymentGateway.dtos.responses.InitiatePaymentResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
 
@@ -19,6 +20,8 @@ import static com.school.eportal.configs.PaymentGatewayConfig.getSecretKey;
 public class PaystackPaymentGatewayImpl implements PaymentGatewayClient {
 
     private final RestClient paystackRestClient;
+   @Value("${paystack.redirect.url}")
+    private String callback_url;
 
     public PaystackPaymentGatewayImpl(RestClient paystackRestClient) {
         this.paystackRestClient = paystackRestClient;
@@ -26,6 +29,7 @@ public class PaystackPaymentGatewayImpl implements PaymentGatewayClient {
 
     @Override
     public InitiatePaymentResponse initiatePayment(InitiatePaymentRequest request) {
+        request.setCallback_url(callback_url);
         return paystackRestClient
                 .post()
                 .uri("/transaction/initialize")

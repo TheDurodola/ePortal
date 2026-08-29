@@ -25,7 +25,7 @@ public class SchoolFeeController {
     private SchoolFeeService schoolFeeService;
 
     @PostMapping(value = "/excel", consumes = "multipart/form-data")
-    public ResponseEntity<CreateSchoolFeesResponse> uploadNewSchoolFees(@RequestParam("file") @Valid MultipartFile file){
+    public ResponseEntity<CreateSchoolFeesResponse> uploadNewSchoolFees(@RequestParam("file") @Valid MultipartFile file) {
         log.info("Uploading excel file {} for school fees creation.", file.getOriginalFilename());
         CreateSchoolFeesResponse response = schoolFeeService.createSchoolFees(file);
 
@@ -36,7 +36,7 @@ public class SchoolFeeController {
 
 
     @PostMapping(value = "/payment")
-    public ResponseEntity<PaySchoolFeesResponse> paySchoolFee(@RequestBody PaySchoolFeesRequest request, Authentication authentication){
+    public ResponseEntity<PaySchoolFeesResponse> paySchoolFee(@RequestBody PaySchoolFeesRequest request, Authentication authentication) {
 
         PaySchoolFeesResponse response = schoolFeeService.paySchoolFees(request, authentication);
 
@@ -47,7 +47,7 @@ public class SchoolFeeController {
 
 
     @PostMapping(value = "/webhook")
-    public ResponseEntity<?> updatePayment(@RequestBody PaystackWebhookRequest request){
+    public ResponseEntity<?> updatePayment(@RequestBody PaystackWebhookRequest request) {
         schoolFeeService.updateTransaction(request);
 
         return ResponseEntity
@@ -56,7 +56,7 @@ public class SchoolFeeController {
     }
 
     @GetMapping(value = "/verification")
-    public ResponseEntity<VerifySchoolFeesPaymentResponse> verifySchoolFeesDetails(@RequestBody VerifySchoolFeesPaymentRequest request){
+    public ResponseEntity<VerifySchoolFeesPaymentResponse> verifySchoolFeesDetails(@RequestBody VerifySchoolFeesPaymentRequest request) {
 
         VerifySchoolFeesPaymentResponse response = schoolFeeService.verifySchoolFees(request);
 
@@ -66,14 +66,13 @@ public class SchoolFeeController {
     }
 
     @GetMapping()
-    public ResponseEntity<GetSchoolFeesDetailsResponse> getSchoolFeesDetails(Authentication authentication){
+    public ResponseEntity<GetSchoolFeesDetailsResponse> getSchoolFeesDetails(Authentication authentication) {
         GetSchoolFeesDetailsResponse response = schoolFeeService.getSchoolFeesDetails(authentication);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(response);
     }
-
 
 
 }

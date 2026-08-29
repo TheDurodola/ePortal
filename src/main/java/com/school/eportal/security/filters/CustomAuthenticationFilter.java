@@ -40,7 +40,7 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
     @Value("${jwt.duration}")
     private long jwtValidationLength;
 
-    public CustomAuthenticationFilter( AuthenticationManager authenticationManager, ObjectMapper objectMapper, @Value("${jwt.signing.key}")  String signingKey) {
+    public CustomAuthenticationFilter(AuthenticationManager authenticationManager, ObjectMapper objectMapper, @Value("${jwt.signing.key}") String signingKey) {
         this.authenticationManager = authenticationManager;
         this.objectMapper = objectMapper;
         this.signingKey = signingKey;
@@ -50,8 +50,8 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String path = request.getServletPath();
 
-        if (!path.equals("/api/v1/auth/signin")){
-            filterChain.doFilter(request,response);
+        if (!path.equals("/api/v1/auth/signin")) {
+            filterChain.doFilter(request, response);
             return;
         }
         log.info("Authentication Initiated with IP Address: {}", request.getRemoteAddr());

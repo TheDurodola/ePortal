@@ -33,9 +33,9 @@ public class CustomUserDetailsServiceConfiguration implements UserDetailsService
         }
 
         List<SimpleGrantedAuthority> authorities = new ArrayList<SimpleGrantedAuthority>();
-            authorities.add(new SimpleGrantedAuthority(response.getRole().name()));
+        authorities.add(new SimpleGrantedAuthority(response.getRole().name()));
 
-            return new User(response.getId(), response.getPassword(), authorities);
+        return new User(response.getId(), response.getPassword(), authorities);
 
     }
 }

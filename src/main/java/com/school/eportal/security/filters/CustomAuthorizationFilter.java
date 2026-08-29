@@ -109,7 +109,7 @@ public class CustomAuthorizationFilter extends OncePerRequestFilter {
     }
 
     private static boolean isPublicApi(HttpServletRequest request) {
-        return request.getServletPath().equals("/api/v1/auth/password" )
+        return request.getServletPath().equals("/api/v1/auth/password")
                 || request.getServletPath().equals("/api/v1/auth/registration");
     }
 

@@ -35,7 +35,7 @@ public class ParentRegistrationRequest {
     private LocalDate childDateOfBirth;
 
     @NotBlank(message = "Lastname cannot be blank")
-    @Size(min = 2, max = 30, message = "Username must be between 2 and 30 characters")
+    @Size(min = 5, max = 30, message = "Username must be between 5 and 30 characters")
     private String password;
 
 }

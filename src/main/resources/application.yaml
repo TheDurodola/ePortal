@@ -27,3 +27,5 @@ logging:
 paystack:
   secret:
     key: ${PAYSTACK_SECRET_KEY}
+  redirect:
+    url: ${PAYSTACK_REDIRECT_URL}

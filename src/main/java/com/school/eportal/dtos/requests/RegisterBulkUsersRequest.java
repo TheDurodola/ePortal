@@ -10,5 +10,5 @@ import java.util.List;
 @Getter
 @Setter
 public class RegisterBulkUsersRequest {
-    private List< @Valid BulkAccountDTO> data;
+    private List<@Valid BulkAccountDTO> data;
 }

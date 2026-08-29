@@ -1,6 +1,5 @@
 package com.school.eportal.services.interfaces;
 
-import com.school.eportal.dtos.requests.GetSchoolFeesDetailsRequest;
 import com.school.eportal.dtos.requests.PaySchoolFeesRequest;
 import com.school.eportal.dtos.requests.PaystackWebhookRequest;
 import com.school.eportal.dtos.requests.VerifySchoolFeesPaymentRequest;
@@ -19,7 +18,6 @@ public interface SchoolFeeService {
     void updateTransaction(PaystackWebhookRequest request);
 
     VerifySchoolFeesPaymentResponse verifySchoolFees(VerifySchoolFeesPaymentRequest request);
-
 
 
     GetSchoolFeesDetailsResponse getSchoolFeesDetails(Authentication authentication);

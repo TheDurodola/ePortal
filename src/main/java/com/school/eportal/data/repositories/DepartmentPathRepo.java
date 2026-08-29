@@ -10,8 +10,9 @@ import java.util.Optional;
 import java.util.Set;
 
 @Repository
-public interface DepartmentPathRepo extends MongoRepository<DepartmentPath,String> {
+public interface DepartmentPathRepo extends MongoRepository<DepartmentPath, String> {
     Optional<DepartmentPath> findFirstByDepartment(Department department);
+
     Optional<DepartmentPath> findByStudentsContaining(String studentId);
 
     List<DepartmentPath> findByStudentsIn(Set<String> targetStudentIds);

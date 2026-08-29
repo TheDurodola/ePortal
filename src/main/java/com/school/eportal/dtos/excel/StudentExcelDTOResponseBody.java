@@ -17,6 +17,6 @@ public class StudentExcelDTOResponseBody {
     private String schoolId;
     private Role role;
     private Grade grade;
-    private Division  division;
+    private Division division;
     private Department department;
 }

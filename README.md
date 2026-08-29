@@ -1,6 +1,6 @@
 # ePortal Base — Nigerian School Management System Template
 
-A robust, extensible, and modular backend base project built with **Java 21**, **Spring Boot 4**, and **MongoDB**. This project serves as a foundational blueprint for developing customized electronic school portals (**ePortals**) specifically tailored to Nigerian educational institutions (Creche, Nursery, Primary, Junior Secondary (JSS), and Senior Secondary (SSS)).
+A robust, extensible, and modular backend base project built with **Java 21**, **Spring Boot 4**, and **MongoDB**. This project serves as a foundational blueprint for developing customized electronic school portals (**ePortals**) specifically tailored to Nigerian educational institutions (Crèche, Nursery, Primary, Junior Secondary (JSS), and Senior Secondary (SSS)).
 
  [Frontend - Nestjs](https://github.com/TheDurodola/ePortal-Client)
 ---
@@ -13,7 +13,7 @@ A robust, extensible, and modular backend base project built with **Java 21**, *
 - [Getting Started & Setup](#getting-started--setup)
 - [Environment Configuration](#environment-configuration)
 - [Authentication & Security](#authentication--security)
-- [API Documentation](#api-documentation)
+- [API Documentation](#api-documentation-&-testing)
   - [1. User Sign-In (Authentication)](#1-user-sign-in-authentication)
   - [2. Parent Registration](#2-parent-registration)
   - [3. Pre-Registration via Excel Upload](#3-pre-registration-via-excel-upload)
@@ -50,13 +50,13 @@ The **ePortal Base** simplifies the deployment of school management systems in N
 
 Designed around the standard Nigerian educational framework:
 
-| Category | Values |
-| :--- | :--- |
-| **Roles** | `ADMIN`, `PRINCIPAL`, `TEACHER`, `STUDENT`, `PARENT`, `ACCOUNTANT` |
-| **Grades** | `CRECHE`, `PLAYGROUND`, `KG1`, `KG2`, `NURSERY_1`, `NURSERY_2`, `PRIMARY_1` to `PRIMARY_6`, `JSS1` to `JSS3`, `SS1` to `SS3` |
-| **Departments** | `SCIENCE`, `ART`, `COMMERCIAL`, `NONE` |
-| **Divisions** | `A`, `B`, `NONE` |
-| **Account Status** | `ACTIVE`, `INACTIVE`, `BANNED` |
+| Category           | Values                                                                                                                       |
+|:-------------------|:-----------------------------------------------------------------------------------------------------------------------------|
+| **Roles**          | `ADMIN`, `PRINCIPAL`, `TEACHER`, `STUDENT`, `PARENT`, `ACCOUNTANT`                                                           |
+| **Grades**         | `CRECHE`, `PLAYGROUND`, `KG1`, `KG2`, `NURSERY_1`, `NURSERY_2`, `PRIMARY_1` to `PRIMARY_6`, `JSS1` to `JSS3`, `SS1` to `SS3` |
+| **Departments**    | `SCIENCE`, `ART`, `COMMERCIAL`, `NONE`                                                                                       |
+| **Divisions**      | `A`, `B`, `NONE`                                                                                                             |
+| **Account Status** | `ACTIVE`, `INACTIVE`, `BANNED`                                                                                               |
 
 ---
 
@@ -676,38 +676,38 @@ Returned for custom application business exceptions (e.g. `InactiveAccountStatus
 ```
 
 #### Domain Exception Classes & Status Code Mapping
-| Exception Class | Status | Description / Trigger Condition |
-| :--- | :--- | :--- |
-| `InactiveAccountStatusException` *(New)* | `400 BAD REQUEST` | Attempting actions on a child or user account that has not yet been activated |
-| `InvalidPasswordException` *(New)* | `400 BAD REQUEST` | Password change failed due to incorrect old password |
-| `InvalidAccountStatusException` | `400 BAD REQUEST` | Account is already active or invalid status transition attempted |
-| `InvalidAmountException` | `400 BAD REQUEST` | Payment amount is invalid or exceeds total required fees |
-| `InvalidBulkRegistration` | `400 BAD REQUEST` | Bulk user onboarding failure due to duplicate usernames |
-| `InvalidCellValueException` | `400 BAD REQUEST` | Excel cell value formatting error or missing mandatory cell |
-| `InvalidClassroomException` | `400 BAD REQUEST` | Grade and division combination does not exist |
-| `InvalidDateOfBirthException` | `400 BAD REQUEST` | Date of birth validation failure against registered records |
-| `InvalidFileTypeException` | `400 BAD REQUEST` | Uploaded document is not a valid Microsoft Excel file |
-| `InvalidPercentageException` | `400 BAD REQUEST` | Term fees percentage breakdown exceeds 100% or fails order checks |
-| `InvalidPreRegistrationException` | `400 BAD REQUEST` | Excel sheet contains empty student/teacher rosters |
-| `InvalidRoleException` | `400 BAD REQUEST` | Operation not applicable to the specified user role |
-| `InvalidSchoolSessionException` | `400 BAD REQUEST` | Invalid school session year format |
-| `InvalidSessionException` | `400 BAD REQUEST` | Academic session could not be parsed into a valid Session object |
-| `InvalidUserException` | `400 BAD REQUEST` | User reference is invalid |
-| `InvalidUsernameException` | `400 BAD REQUEST` | Username or email address already registered |
-| `InvalidWebhookSignature` | `400 BAD REQUEST` | Paystack webhook verification failure |
-| `OutstandingSchoolFeesException` | `400 BAD REQUEST` | Student has uncleared prior term or session fees |
-| `ParentChildRelationshipException` | `400 BAD REQUEST` | Parent account has no linked child or invalid ward relationship |
-| `ParsingException` | `400 BAD REQUEST` | Payload or payload structure parsing error |
-| `SchoolFeesException` | `400 BAD REQUEST` | School fees configuration error |
-| `ValidatorException` | `400 BAD REQUEST` | General validation error |
-| `UserNotFoundException` | `401 UNAUTHORIZED` | User not found in authentication context |
-| `AuthenticationNotSupportedException` | `401 UNAUTHORIZED` | Authentication mechanism not supported |
-| `AcademicSessionDoesntExistException` | `404 NOT FOUND` | Academic session does not exist |
-| `AccountNotFoundException` | `404 NOT FOUND` | Account record does not exist |
-| `FeeLedgerDoesntExistException` | `404 NOT FOUND` | Fee ledger for student/session does not exist |
-| `FeeTransactionDoesntExistException` | `404 NOT FOUND` | Fee transaction record does not exist |
-| `NoSuchClassroomException` | `404 NOT FOUND` | Classroom does not exist |
-| `TransactionAlreadyExistsException` | `409 CONFLICT` | Duplicate transaction reference detected |
+| Exception Class                       | Status             | Description / Trigger Condition                                               |
+|:--------------------------------------|:-------------------|:------------------------------------------------------------------------------|
+| `InactiveAccountStatusException`      | `400 BAD REQUEST`  | Attempting actions on a child or user account that has not yet been activated |
+| `InvalidPasswordException`            | `400 BAD REQUEST`  | Password change failed due to incorrect old password                          |
+| `InvalidAccountStatusException`       | `400 BAD REQUEST`  | Account is already active or invalid status transition attempted              |
+| `InvalidAmountException`              | `400 BAD REQUEST`  | Payment amount is invalid or exceeds total required fees                      |
+| `InvalidBulkRegistration`             | `400 BAD REQUEST`  | Bulk user onboarding failure due to duplicate usernames                       |
+| `InvalidCellValueException`           | `400 BAD REQUEST`  | Excel cell value formatting error or missing mandatory cell                   |
+| `InvalidClassroomException`           | `400 BAD REQUEST`  | Grade and division combination does not exist                                 |
+| `InvalidDateOfBirthException`         | `400 BAD REQUEST`  | Date of birth validation failure against registered records                   |
+| `InvalidFileTypeException`            | `400 BAD REQUEST`  | Uploaded document is not a valid Microsoft Excel file                         |
+| `InvalidPercentageException`          | `400 BAD REQUEST`  | Term fees percentage breakdown exceeds 100% or fails order checks             |
+| `InvalidPreRegistrationException`     | `400 BAD REQUEST`  | Excel sheet contains empty student/teacher rosters                            |
+| `InvalidRoleException`                | `400 BAD REQUEST`  | Operation not applicable to the specified user role                           |
+| `InvalidSchoolSessionException`       | `400 BAD REQUEST`  | Invalid school session year format                                            |
+| `InvalidSessionException`             | `400 BAD REQUEST`  | Academic session could not be parsed into a valid Session object              |
+| `InvalidUserException`                | `400 BAD REQUEST`  | User reference is invalid                                                     |
+| `InvalidUsernameException`            | `400 BAD REQUEST`  | Username or email address already registered                                  |
+| `InvalidWebhookSignature`             | `400 BAD REQUEST`  | Paystack webhook verification failure                                         |
+| `OutstandingSchoolFeesException`      | `400 BAD REQUEST`  | Student has uncleared prior term or session fees                              |
+| `ParentChildRelationshipException`    | `400 BAD REQUEST`  | Parent account has no linked child or invalid ward relationship               |
+| `ParsingException`                    | `400 BAD REQUEST`  | Payload or payload structure parsing error                                    |
+| `SchoolFeesException`                 | `400 BAD REQUEST`  | School fees configuration error                                               |
+| `ValidatorException`                  | `400 BAD REQUEST`  | General validation error                                                      |
+| `UserNotFoundException`               | `401 UNAUTHORIZED` | User not found in authentication context                                      |
+| `AuthenticationNotSupportedException` | `401 UNAUTHORIZED` | Authentication mechanism not supported                                        |
+| `AcademicSessionDoesntExistException` | `404 NOT FOUND`    | Academic session does not exist                                               |
+| `AccountNotFoundException`            | `404 NOT FOUND`    | Account record does not exist                                                 |
+| `FeeLedgerDoesntExistException`       | `404 NOT FOUND`    | Fee ledger for student/session does not exist                                 |
+| `FeeTransactionDoesntExistException`  | `404 NOT FOUND`    | Fee transaction record does not exist                                         |
+| `NoSuchClassroomException`            | `404 NOT FOUND`    | Classroom does not exist                                                      |
+| `TransactionAlreadyExistsException`   | `409 CONFLICT`     | Duplicate transaction reference detected                                      |
 
 ### 2. Spring RFC 7807 Validation Error (`ProblemDetail`)
 Returned when request body validation fails (`MethodArgumentNotValidException`). Includes a key-value mapping of field validation errors under the `errors` property.

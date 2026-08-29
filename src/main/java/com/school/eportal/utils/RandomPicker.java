@@ -16,6 +16,7 @@ public class RandomPicker {
                 .map(String::valueOf)
                 .collect(Collectors.joining());
     }
+
     public static String generateSixRandomNumber() {
         StringBuilder result = new StringBuilder(6);
         for (int i = 0; i < 6; i++) {

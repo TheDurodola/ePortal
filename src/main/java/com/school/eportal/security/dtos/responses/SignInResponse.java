@@ -7,6 +7,7 @@ import lombok.Setter;
 @Getter
 public class SignInResponse {
     private String jwt;
+
     public SignInResponse(String jwt) {
         this.jwt = jwt;
     }

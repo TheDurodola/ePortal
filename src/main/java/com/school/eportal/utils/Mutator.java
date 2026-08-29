@@ -6,7 +6,7 @@ import org.jspecify.annotations.NonNull;
 public class Mutator {
 
 
-    public static void mutate(@NonNull ParentRegistrationRequest request){
+    public static void mutate(@NonNull ParentRegistrationRequest request) {
         request.setUsername(request.getUsername().toLowerCase());
         request.setChildSchoolId(request.getChildSchoolId().toLowerCase());
         request.setFirstName(request.getFirstName().toLowerCase());

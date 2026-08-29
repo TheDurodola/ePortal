@@ -18,7 +18,7 @@ import java.util.Objects;
 
 @Component
 @RequiredArgsConstructor
-public class  CustomAuthenticationProvider implements AuthenticationProvider {
+public class CustomAuthenticationProvider implements AuthenticationProvider {
 
     private final UserDetailsService userDetailsService;
     private final PasswordEncoder passwordEncoder;
@@ -39,6 +39,6 @@ public class  CustomAuthenticationProvider implements AuthenticationProvider {
 
     @Override
     public boolean supports(@NonNull Class<?> authentication) {
-        return CustomAuthentication.class==authentication;
+        return CustomAuthentication.class == authentication;
     }
 }

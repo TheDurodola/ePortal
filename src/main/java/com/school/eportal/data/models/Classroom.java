@@ -46,5 +46,5 @@ public class Classroom {
 
     public void addStudent(String studentId) {
         students.add(studentId);
-}
+    }
 }

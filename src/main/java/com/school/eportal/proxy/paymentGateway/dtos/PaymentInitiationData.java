@@ -6,4 +6,5 @@ public record PaymentInitiationData(
         @JsonProperty("authorization_url") String authorizationUrl,
         @JsonProperty("access_code") String accessCode,
         String reference
-) {}
+) {
+}

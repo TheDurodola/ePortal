@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.school.eportal.data.models.*;
 import com.school.eportal.data.models.enums.*;
 import com.school.eportal.data.repositories.*;
+import com.school.eportal.dtos.DeptGrade;
 import com.school.eportal.dtos.SchoolFeesDetailPayload;
 import com.school.eportal.dtos.SchoolResponseData;
 import com.school.eportal.dtos.requests.PaySchoolFeesRequest;
@@ -111,7 +112,7 @@ public class SchoolFeeServiceImpl implements SchoolFeeService {
     @Transactional
     public PaySchoolFeesResponse paySchoolFees(@NonNull PaySchoolFeesRequest request, @NonNull Authentication authentication) {
 
-log.info("The student id is {}", request.getStudentId());
+        log.info("The student id is {}", request.getStudentId());
         Account parent = accounts.findById(Objects.requireNonNull(authentication.getPrincipal()).toString()
         ).orElseThrow(() -> new UserNotFoundException("Parent account not found"));
 
@@ -318,7 +319,7 @@ log.info("The student id is {}", request.getStudentId());
     }
 
     private void IfRequestAmountExceedsSchoolFeesTotalAmount(@NonNull PaySchoolFeesRequest request, @NonNull FeeLedger feeLedger) {
-        if (feeLedger.getTotalExpectedAmount() < (nairaToKobo(request.getAmount()) + getAmountPaid(feeLedger.getId())) ) {
+        if (feeLedger.getTotalExpectedAmount() < (nairaToKobo(request.getAmount()) + getAmountPaid(feeLedger.getId()))) {
             throw new InvalidAmountException("Exceeded total amount");
         }
     }
@@ -360,7 +361,7 @@ log.info("The student id is {}", request.getStudentId());
 
         long total = getTotalAmountPaid(feeLedger, feeTransaction);
 
-        if (feeLedger.getTotalExpectedAmount() > total && total > 0){
+        if (feeLedger.getTotalExpectedAmount() > total && total > 0) {
             feeLedger.setStatus(FeeLedgerStatus.PARTIALLY_PAID);
         }
         if (total == feeLedger.getTotalExpectedAmount()) {
@@ -436,7 +437,7 @@ log.info("The student id is {}", request.getStudentId());
 
         List<Account> children = accounts.findAllById(childIdsWithNoOutstanding);
 
-        return  children.stream()
+        return children.stream()
                 .map(child -> SchoolFeesDetailPayload.builder()
                         .studentFirstName(toProperCase(child.getFirstName()))
                         .studentID(child.getId())
@@ -449,7 +450,7 @@ log.info("The student id is {}", request.getStudentId());
                         .totalPaid(BigDecimal.ZERO)
                         .build())
 
-                .map(payload ->{
+                .map(payload -> {
                     SchoolFee fee = schoolFees.findBySessionIdAndDepartmentAndGrade(
                             sessions.findByIsCurrentTrue().orElseThrow().getId(),
                             payload.getDepartment(),
@@ -477,93 +478,14 @@ log.info("The student id is {}", request.getStudentId());
         return session.getStartYear() + "/" + session.getEndYear();
     }
 
-    private Department getStudentDepartment(@NonNull Account child) {
+    private @NonNull Department getStudentDepartment(@NonNull Account child) {
         Optional<DepartmentPath> byStudentsContaining = departmentPathRepo.findByStudentsContaining(child.getId());
         if (byStudentsContaining.isEmpty()) {
             return Department.NONE;
         }
-
         return byStudentsContaining.get().getDepartment();
     }
-    //    private List<SchoolFeesDetailPayload> getStudentsWithoutOutstandingSchoolDetails(
-//            List<String> childIdsWithNoOutstanding) {
-//
-//        if (childIdsWithNoOutstanding.isEmpty()) {
-//            return List.of();
-//        }
-//
-//        Session currentSession = sessions.findByIsCurrentTrue()
-//                .orElseThrow(() -> new SchoolFeesException("No session is in order."));
-//
-//        Set<String> targetStudentIds = new HashSet<>(childIdsWithNoOutstanding);
-//
-//        List<Classroom> listOfClassrooms = classrooms.findByStudentsIn(targetStudentIds);
-//        List<DepartmentPath> departmentPaths = departmentPathRepo.findByStudentsIn(targetStudentIds);
-//        List<Account> accountList = accounts.findAllById(targetStudentIds);
-//
-//        Map<String, Grade> gradeByStudentId = new HashMap<>();
-//        for (Classroom classroom : listOfClassrooms) {
-//            for (String studentId : classroom.getStudents()) {
-//                if (targetStudentIds.contains(studentId)) {
-//                    gradeByStudentId.put(studentId, classroom.getGrade());
-//                }
-//            }
-//        }
-//
-//        Map<String, Department> departmentByStudentId = new HashMap<>();
-//        for (DepartmentPath path : departmentPaths) {
-//            for (String studentId : path.getStudents()) {
-//                if (targetStudentIds.contains(studentId)) {
-//                    departmentByStudentId.put(studentId, path.getDepartment());
-//                }
-//            }
-//        }
-//
-//        Map<String, Account> accountById = accountList.stream()
-//                .collect(Collectors.toMap(Account::getId, a -> a));
-//
-//        Set<DeptGrade> neededCombos = targetStudentIds.stream()
-//                .map(id -> new DeptGrade(departmentByStudentId.get(id), gradeByStudentId.get(id)))
-//                .filter(dg -> dg.department() != null && dg.grade() != null)
-//                .collect(Collectors.toSet());
-//
-//        Map<DeptGrade, SchoolFee> feeByDeptGrade = neededCombos.isEmpty()
-//                ? Map.of()
-//                : schoolFees.findBySessionIdAndDepartmentInAndGradeIn(
-//                        currentSession.getId(),
-//                        neededCombos.stream().map(DeptGrade::department).toList(),
-//                        neededCombos.stream().map(DeptGrade::grade).toList()
-//                ).stream()
-//                .collect(Collectors.toMap(f -> new DeptGrade(f.getDepartment(), f.getGrade()), f -> f));
-//
-//        return targetStudentIds.stream()
-//                .map(studentId -> {
-//                    Grade grade = gradeByStudentId.get(studentId);
-//                    Department department = departmentByStudentId.get(studentId);
-//                    Account account = accountById.get(studentId);
-//                    SchoolFee fee = (grade != null && department != null)
-//                            ? feeByDeptGrade.get(new DeptGrade(department, grade))
-//                            : null;
-//
-//                    if (account == null || fee == null) {
-//                        log.warn("Could not resolve fee details for studentId={} (account missing: {}, fee missing: {})",
-//                                studentId, account == null, fee == null);
-//                        return null;
-//                    }
-//
-//                    return SchoolFeesDetailPayload.builder()
-//                            .session(currentSession.getId())
-//                            .studentID(account.getId())
-//                            .studentFirstName(account.getFirstName())
-//                            .studentLastName(account.getLastName())
-//                            .tuition(koboToNaira(fee.getTuitionInKobo()))
-//                            .total(koboToNaira(fee.getTotal()))
-//                            .totalPaid(BigDecimal.ZERO)
-//                            .build();
-//                })
-//                .filter(Objects::nonNull)
-//                .toList();
-//    }
+
     private List<SchoolFeesDetailPayload> getOutstandingSchoolFeesID(List<String> childIDs) {
 
         // 1. Fetch all outstanding ledgers for these students in one query, correctly filtered
@@ -596,9 +518,12 @@ log.info("The student id is {}", request.getStudentId());
                                 "Missing correlated data for studentId=" + ledger.getStudentId());
                     }
 
+                    DeptGrade deptGrade = getDeptGrade(account);
                     return SchoolFeesDetailPayload.builder()
                             .session(ledger.getAcademicSessionId())
                             .studentID(account.getId())
+                            .department(deptGrade.department())
+                            .grade(deptGrade.grade())
                             .studentFirstName(account.getFirstName())
                             .studentLastName(account.getLastName())
                             .tuition(koboToNaira(fee.getTuitionInKobo()))
@@ -607,5 +532,17 @@ log.info("The student id is {}", request.getStudentId());
                             .build();
                 })
                 .toList();
+    }
+
+    private DeptGrade getDeptGrade(Account account) {
+
+        Classroom classroom = getStudentClassroom(account);
+        Department department = getDepartment(account);
+
+        return new DeptGrade(department, classroom.getGrade());
+    }
+
+    private Classroom getStudentClassroom(Account account) {
+        return classrooms.findByStudentsContaining(account.getId()).orElseThrow(() -> new InvalidClassroomException(account.getFirstName() + " doesn't have a class yet"));
     }
 }

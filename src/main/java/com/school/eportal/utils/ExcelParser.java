@@ -41,7 +41,7 @@ public class ExcelParser {
             Sheet sheet = workbook.getSheetAt(0);
 
             int lastRowNum = sheet.getLastRowNum();
-            if (isRegistrationHeader(sheet.getRow(sheet.getFirstRowNum()))){
+            if (isRegistrationHeader(sheet.getRow(sheet.getFirstRowNum()))) {
                 sheet.removeRow(sheet.getRow(sheet.getFirstRowNum()));
             }
 
@@ -50,7 +50,7 @@ public class ExcelParser {
                 String firstName;
                 try {
                     firstName = getStringCellValue(currentRow.getCell(0));
-                }catch (InvalidCellValueException e){
+                } catch (InvalidCellValueException e) {
                     break;
                 }
                 String lastName = getStringCellValue(currentRow.getCell(1));
@@ -66,7 +66,7 @@ public class ExcelParser {
                 String division;
                 try {
                     grade = getStringCellValue(currentRow.getCell(3));
-                     division = getStringCellValue(currentRow.getCell(4));
+                    division = getStringCellValue(currentRow.getCell(4));
                 } catch (InvalidCellValueException e) {
                     grade = "NONE";
                     division = "NONE";
@@ -111,7 +111,7 @@ public class ExcelParser {
 
             int lastRowNum = sheet.getLastRowNum();
 
-            if (isRegistrationHeader(sheet.getRow(sheet.getFirstRowNum()))){
+            if (isRegistrationHeader(sheet.getRow(sheet.getFirstRowNum()))) {
                 sheet.removeRow(sheet.getRow(sheet.getFirstRowNum()));
             }
 
@@ -120,7 +120,7 @@ public class ExcelParser {
                 String firstName;
                 try {
                     firstName = getStringCellValue(currentRow.getCell(0));
-                }catch (InvalidCellValueException e){
+                } catch (InvalidCellValueException e) {
                     break;
                 }
                 String lastName = getStringCellValue(currentRow.getCell(1));
@@ -131,7 +131,7 @@ public class ExcelParser {
                     continue;
                 }
 
-                String  grade = getStringCellValue(currentRow.getCell(3));
+                String grade = getStringCellValue(currentRow.getCell(3));
                 String division = getStringCellValue(currentRow.getCell(4));
                 String department = getStringCellValue(currentRow.getCell(5));
 
@@ -175,7 +175,7 @@ public class ExcelParser {
 
             int lastRowNum = sheet.getLastRowNum();
             for (Row currentRow : sheet) {
-                if (isSchoolFeeHeader(currentRow)){
+                if (isSchoolFeeHeader(currentRow)) {
                     continue;
                 }
                 String departmentInString = getStringCellValue(currentRow.getCell(0));
@@ -192,20 +192,20 @@ public class ExcelParser {
                 Department department;
                 if (departmentInString == null || departmentInString.isBlank()) {
                     department = Department.NONE;
-                }else department = Department.valueOf(departmentInString);
+                } else department = Department.valueOf(departmentInString);
                 validatePercentages(firstTermMinPercentage, secondTermMinPercentage, currentRow);
                 records.add(SchoolFeeExcelExtractDTO
                         .builder()
-                            .session(session)
-                            .tuition(tuition)
-                            .department(department)
-                            .firstTermMinPercentage(firstTermMinPercentage
-                                    .round(new  MathContext(2, RoundingMode.HALF_UP)))
-                            .secondTermMinPercentage(secondTermMinPercentage
-                                    .round(new  MathContext(2, RoundingMode.HALF_UP)))
-                            .thirdTermMinPercentage(BigDecimal.valueOf(100)
-                                    .round(new  MathContext(2, RoundingMode.HALF_UP)))
-                            .grade(Grade.valueOf(grade.toUpperCase()))
+                        .session(session)
+                        .tuition(tuition)
+                        .department(department)
+                        .firstTermMinPercentage(firstTermMinPercentage
+                                .round(new MathContext(2, RoundingMode.HALF_UP)))
+                        .secondTermMinPercentage(secondTermMinPercentage
+                                .round(new MathContext(2, RoundingMode.HALF_UP)))
+                        .thirdTermMinPercentage(BigDecimal.valueOf(100)
+                                .round(new MathContext(2, RoundingMode.HALF_UP)))
+                        .grade(Grade.valueOf(grade.toUpperCase()))
                         .build());
 
                 if (isLastRow(lastRowNum, currentRow)) {
@@ -244,7 +244,7 @@ public class ExcelParser {
     }
 
     private static boolean isLessThanZeroPercentage(@NonNull BigDecimal firstTermMinPercentage, BigDecimal secondTermMinPercentage) {
-        return firstTermMinPercentage.compareTo(BigDecimal.ZERO) < 0 || secondTermMinPercentage.compareTo(BigDecimal.ZERO) < 0 ;
+        return firstTermMinPercentage.compareTo(BigDecimal.ZERO) < 0 || secondTermMinPercentage.compareTo(BigDecimal.ZERO) < 0;
     }
 
     private boolean isRegistrationHeader(@NonNull Row currentRow) {
@@ -283,13 +283,13 @@ public class ExcelParser {
         return currentCell.getRowNum() == lastRowNumber;
     }
 
-    private String getStringCellValue(Cell cell)  {
-        if (cell == null) throw new  InvalidCellValueException(" A cell in the spreadsheet is null.");
+    private String getStringCellValue(Cell cell) {
+        if (cell == null) throw new InvalidCellValueException(" A cell in the spreadsheet is null.");
         return switch (cell.getCellType()) {
             case STRING -> cell.getStringCellValue().trim();
             case NUMERIC -> String.valueOf((long) cell.getNumericCellValue());
             case BOOLEAN -> String.valueOf(cell.getBooleanCellValue());
-            default -> throw new InvalidCellValueException(identifyCell(cell)  + " is having an invalid format.");
+            default -> throw new InvalidCellValueException(identifyCell(cell) + " is having an invalid format.");
         };
     }
 
@@ -300,7 +300,7 @@ public class ExcelParser {
             case NUMERIC -> BigDecimal.valueOf(cell.getNumericCellValue());
             case STRING -> {
                 String raw = cell.getStringCellValue().trim();
-                if (raw.isEmpty()) throw new InvalidCellValueException(identifyCell(cell)  +" cell is null;");
+                if (raw.isEmpty()) throw new InvalidCellValueException(identifyCell(cell) + " cell is null;");
                 try {
                     yield new BigDecimal(raw);
                 } catch (NumberFormatException e) {
@@ -308,7 +308,7 @@ public class ExcelParser {
                 }
             }
             case FORMULA -> BigDecimal.valueOf(cell.getNumericCellValue()); // only safe if evaluator already ran
-            default -> throw new InvalidCellValueException(identifyCell(cell)  + " is having an invalid format.");
+            default -> throw new InvalidCellValueException(identifyCell(cell) + " is having an invalid format.");
         };
     }
 
@@ -325,7 +325,7 @@ public class ExcelParser {
 
         // Case 1: Properly formatted Excel Date cell
         if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
-            LocalDateTime dateTime  = cell.getLocalDateTimeCellValue();
+            LocalDateTime dateTime = cell.getLocalDateTimeCellValue();
             if (dateTime == null) {
                 throw new InvalidDateOfBirthException(identifyCell(cell) + " cell contains an invalid numeric date.");
             }
@@ -346,7 +346,7 @@ public class ExcelParser {
             }
         }
 
-        throw new InvalidDateOfBirthException( identifyCell(cell) + " unsupported cell format for Date of Birth.");
+        throw new InvalidDateOfBirthException(identifyCell(cell) + " unsupported cell format for Date of Birth.");
     }
 
     private Long getLongCellValue(Cell cell) {

@@ -1,7 +1,10 @@
 package com.school.eportal.proxy.paymentGateway.dtos.responses;
 
 import com.school.eportal.proxy.paymentGateway.dtos.PaymentInitiationData;
-import lombok.*;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 @Getter
 @Setter

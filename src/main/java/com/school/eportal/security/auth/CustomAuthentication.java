@@ -13,7 +13,7 @@ public class CustomAuthentication implements Authentication {
     private boolean authenticated;
     private Collection<? extends GrantedAuthority> authorities;
 
-    public CustomAuthentication( String username, String password) {
+    public CustomAuthentication(String username, String password) {
         this.username = username;
         this.password = password;
     }

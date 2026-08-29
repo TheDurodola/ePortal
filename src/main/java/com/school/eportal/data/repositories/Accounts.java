@@ -11,7 +11,10 @@ import java.util.Optional;
 @Repository
 public interface Accounts extends MongoRepository<Account, String> {
     Optional<Account> findByUsername(String username);
+
     List<Account> findAllByUsernameIn(List<String> usernames);
+
     boolean existsByUsername(String username);
+
     List<Account> findAllByRole(Role role);
 }

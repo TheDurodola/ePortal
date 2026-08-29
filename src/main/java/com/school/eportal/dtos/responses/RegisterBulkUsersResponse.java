@@ -11,5 +11,5 @@ import java.util.Map;
 @Getter
 @Setter
 public class RegisterBulkUsersResponse {
-    private Map<String, Map<String,List<String>>> data;
+    private Map<String, Map<String, List<String>>> data;
 }
