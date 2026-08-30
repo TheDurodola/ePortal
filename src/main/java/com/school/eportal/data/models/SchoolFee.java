@@ -16,7 +16,7 @@ import java.time.Instant;
 @Setter
 @Getter
 @Builder
-@Document(collection = "schoolFees")
+@Document(collection = "school_fees")
 public class SchoolFee {
     @Id
     private String id;

@@ -13,7 +13,7 @@ import java.time.Instant;
 
 @Setter
 @Getter
-@Document(collection = "feeTransactions")
+@Document(collection = "fee_transactions")
 @Builder
 public class FeeTransaction {
 

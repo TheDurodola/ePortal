@@ -16,7 +16,7 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-@Document(collection = "departmentPaths")
+@Document(collection = "department_paths")
 public class DepartmentPath {
 
     @Id

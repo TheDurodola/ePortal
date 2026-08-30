@@ -13,7 +13,7 @@ import java.time.Instant;
 @Getter
 @Setter
 @Builder
-@Document
+@Document(collection = "parent_child")
 public class ParentChild {
     @Id
     private String id;
