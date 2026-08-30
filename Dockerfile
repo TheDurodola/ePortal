@@ -8,4 +8,4 @@ FROM eclipse-temurin:21-jre-jammy
 COPY --from=build /target/*.jar app.jar
 
 
-ENTRYPOINT ["java", "-Dserver.port=${SERVER_PORT}", "-jar", "/app.jar"]
+ENTRYPOINT ["sh", "-c", "java -Dserver.port=${SERVER_PORT} -jar /app.jar"]

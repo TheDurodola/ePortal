@@ -54,12 +54,12 @@ public class CustomAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-        log.info("Authentication Initiated with IP Address: {}", request.getRemoteAddr());
+        log.info("Authentication Initiated by user with IP Address: {}", request.getRemoteAddr());
         try {
             InputStream inputStream = request.getInputStream();
             SignInRequest signInRequest = objectMapper.readValue(inputStream, SignInRequest.class);
             signInRequest.setUsername(signInRequest.getUsername().toLowerCase());
-            log.info("Authentication initiated with Username: {}", signInRequest.getUsername());
+            log.info("Authentication initiated by user: {}", signInRequest.getUsername());
             Authentication authentication = new CustomAuthentication(signInRequest.getUsername(), signInRequest.getPassword());
             Authentication result = authenticationManager.authenticate(authentication);
 
